@@ -1,0 +1,1 @@
+# Naturalmente il file è ancora vuoto ma almeno è pronto su github [non è detto che servano, informarsi per bene se le operazione possono comprendere anche i trigger, al massimo se abbiamo tempo due in più non fanno male ahah]
