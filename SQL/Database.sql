@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `Piano` (
   `lunghezza` INT NOT NULL,
   `altezza` INT NOT NULL,
   `isMansardato` TINYINT NOT NULL CHECK(`isMansardato` IN (0, 1)) DEFAULT 0, -- di base non è mansardato
-  `inclinazione` INT DEFAULT NULL, -- indica l'angolo di inclinazione
+  `inclinazione` INT DEFAULT NULL, -- indica l'angolo di inclinazione del soffitto
   `altezza_max` INT DEFAULT NULL,
   `altezza_min` INT DEFAULT NULL,
   PRIMARY KEY (`ID`)
@@ -86,15 +86,6 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
   `parete` INT NOT NULL, -- FK a parete
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   PRIMARY KEY (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Porta` ( -- perchè l'abbiamo creata se abbiamo messo tutto nel punto di accesso?
-    `ID` INT NOT NULL AUTO_INCREMENT,
-    `larghezza` INT NOT NULL,
-    `lunghezza` INT NOT NULL,
-    `altezza` INT NOT NULL, 
-    `apertura` TINYINT NOT NULL CHECK (`apertura` IN (0, 1, 2)),
-	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
@@ -179,7 +170,9 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   `isRicopertoPietra` TINYINT NOT NULL CHECK(`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
   `intonaco` INT NOT NULL, -- FK a intonaco
   `pietra` INT DEFAULT NULL, -- FK a pietra
-  `id_parete_vano` INT NOT NULL, -- non ricordo cosa sia
+  `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
+				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire da sinistra dell'ingresso in senso orario
+				 -- (DA RIVEDERE NUMERAZIONE, secondo me andrebbe fatta secondo i punti cardinali, se un vano ha più ingressi non si capisce)
   `mattone` INT NOT NULL, -- FK al tipo di mattone
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
@@ -190,6 +183,8 @@ CREATE TABLE IF NOT EXISTS `Pietra` (
     `peso_medio` INT DEFAULT 0, 
     `superfiecie_media` INT DEFAULT 0,
     `disposizione` TINYINT NOT NULL CHECK(`disposizione` IN (0, 1)) DEFAULT 0, -- 0 verticale 1 orizzontale (non so se intendevi questo con disposizione)
+									       -- Credo che la disposizione dovrebbe essere varchar (una breve descrizione)
+									       -- ([...] pietre usate su quella parete, e qual è la loro disposizione)
     PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -212,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `Intonaco` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
     `descrizione` VARCHAR(45) NOT NULL,
     `spessore1` INT NOT NULL, 
-    `spessore2` INT DEFAULT NULL, -- li ho messi con il defeault perchè devo rileggere il testo, non se sono tutti e 3 obbligatori
+    `spessore2` INT DEFAULT NULL,
     `spessore3` INT DEFAULT NULL,
     PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
@@ -222,12 +217,12 @@ CREATE TABLE IF NOT EXISTS `Pavimentazione` (
     `forma` VARCHAR(45) NOT NULL,
     `tipo` VARCHAR(12) NOT NULL CHECK(`tipo` IN (`parquet`, `piastrellato`)),
     `colore` VARCHAR(45) NOT NULL,
-    `materiale` VARCHAR(45) NOT NULL, -- tipo di materiale (ex. Acero per il parquet, Marmo di carrara per le piastrelle
+    `materiale` VARCHAR(45) NOT NULL, -- tipo di materiale (ex. Acero per il parquet, Marmo di carrara per le piastrelle)
     `materiale_adesivo` VARCHAR(45) NOT NULL, -- con cosa sono attaccate
     `lunghezza` INT NOT NULL,
     `larghezza` INT NOT NULL, 
     `spessore` INT NOT NULL,
-    `larghezza_ fuga` INT DEFAULT NULL, -- è presente solo se il tipo è piastrellato
+    `larghezza_ fuga` INT DEFAULT NULL, -- è presente solo se il tipo è piastrellato (=> trigger?)
     `motivo` INT DEFAULT NULL, -- FK a motivo è presente solo è piastrellato
     PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
@@ -235,7 +230,7 @@ CREATE TABLE IF NOT EXISTS `Pavimentazione` (
 CREATE TABLE IF NOT EXISTS `Motivo` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
     `motivo` VARCHAR(45) NOT NULL, -- descrizone del motivo
-    `isStampatio` TINYINT NOT NULL CHECK(`isStampato` IN (0, 1)),
+    `isStampato` TINYINT NOT NULL CHECK(`isStampato` IN (0, 1)),
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -330,14 +325,14 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavori` (
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`ora_inizio` INT NOT NULL,
-    `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio?
+    `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (trigger?)
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `TurniCapi` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`capo_cantiere` INT NOT NULL, -- FK lavoratore
-    `turno` INT NOT NULL, -- FK a turo
+    `turno` INT NOT NULL, -- FK a turno
 	`giorno` DATETIME NOT NULL,
 	PRIMARY KEY (`ID`),
     UNIQUE (`capo_cantiere`, `progetto`)
@@ -346,7 +341,7 @@ CREATE TABLE IF NOT EXISTS `TurniCapi` ( -- il turno può avere più capi cantie
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
-    `turno` INT NOT NULL, -- FK a turo
+    `turno` INT NOT NULL, -- FK a turno
     `mansione` VARCHAR(45) NOT NULL,
     `giorno` DATETIME NOT NULL,
     `ore_lavorate` INT NOT NULL, -- potrebbe lavorare meno ore per un permesso
