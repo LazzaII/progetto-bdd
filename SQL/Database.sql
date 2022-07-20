@@ -2,6 +2,8 @@
 -- [Sicuramente vanno create le relazioni tra le tabelle]
 -- Manca la parte dei sensori [verde] + manca da rivedere installazioneSenosre [blu] che è presente ma c'è ancora il mio commento su draw.io
 
+--Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
+
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings;
 USE SmartBuildings;
@@ -146,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `LavoroPostDanno` (
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `LavoriNecessari` (
+CREATE TABLE IF NOT EXISTS `LavoroNecessario` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `lavoro` VARCHAR(45) NOT NULL, -- FK a lavoroPostDanno
   `parte_coinvolta` VARCHAR(45) NOT NULL, -- FK a parte coinvolta danno
@@ -162,8 +164,6 @@ CREATE TABLE IF NOT EXISTS `InstallazioneSensore` (
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
--- lo schema logico arriva qua
-
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
@@ -174,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `Parete` (
 				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire da sinistra dell'ingresso in senso orario
 				 -- (DA RIVEDERE NUMERAZIONE, secondo me andrebbe fatta secondo i punti cardinali, se un vano ha più ingressi non si capisce)
   `mattone` INT NOT NULL, -- FK al tipo di mattone
+  `id_vano` INT NOT NULL, -- FK al vano
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -279,8 +280,8 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
     `lunghezza` INT NOT NULL,
     `altezza` INT NOT NULL,
     `costituzione` VARCHAR(45) NOT NULL,
-    `costo` INT NOT NULL,
-    `unita_costo` INT NOT NULL, -- non trovo l'unità del costo unitario se non è presente quanto ne viene usato
+    `costo` DOUBLE NOT NULL,
+    `unita_costo` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
@@ -306,7 +307,7 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     UNIQUE (`CF`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoriProgetti` (
+CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
     `progetto` INT NOT NULL, -- FK a progettoEdilizio
@@ -314,7 +315,7 @@ CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoriProgetti` (
     UNIQUE (`lavoratore`, `progetto`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `SupervisioneLavori` (
+CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
@@ -325,44 +326,62 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavori` (
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`ora_inizio` INT NOT NULL,
-    `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (trigger?)
+    `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `TurniCapi` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
+CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`capo_cantiere` INT NOT NULL, -- FK lavoratore
     `turno` INT NOT NULL, -- FK a turno
 	`giorno` DATETIME NOT NULL,
 	PRIMARY KEY (`ID`),
-    UNIQUE (`capo_cantiere`, `progetto`)
+    UNIQUE (`capo_cantiere`, `turno`, `giorno`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
+CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
     `turno` INT NOT NULL, -- FK a turno
     `mansione` VARCHAR(45) NOT NULL,
     `giorno` DATETIME NOT NULL,
-    `ore_lavorate` INT NOT NULL, -- potrebbe lavorare meno ore per un permesso
+    `ore_lavorate` INT NOT NULL,
 	PRIMARY KEY (`ID`),
-    UNIQUE (`capo_cantiere`, `progetto`)
+    UNIQUE (`lavoratore`, `turno`, `giorno`, `mansione`)
 ) ENGINE = InnoDB;
 
--- mancano solo i sensori
+CREATE TABLE IF NOT EXISTS `Sensore` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+	`distanza_da_sx` DOUBLE NOT NULL, 
+	`altezza_da_terra` DOUBLE NOT NULL,
+	`unita_di_misura` VARCHAR(4) NOT NULL, 
+	`soglia` DOUBLE NOT NULL, 
+	`parete` INT NOT NULL, -- FK parete
+	PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
 
+CREATE TABLE IF NOT EXISTS `SensoreDiPosizione` (
+	`ID` INT NOT NULL, -- FK Sensore
+	`larghezza_sensore` DOUBLE NOT NULL, 
+	`larghezza_incrinatura_muraria` DOUBLE NOT NULL,
+	PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
 
+CREATE TABLE IF NOT EXISTS `GiroscopioTriAssiale` (
+	`ID` INT NOT NULL, -- FK Sensore
+	`sollecitazione_torsione` DOUBLE NOT NULL, 
+	`sollecitazione_accelerometrica_tri_assiale` DOUBLE NOT NULL, 
+	`temperatura_interna` DOUBLE NOT NULL, -- gradi centigradi
+	`temperatura_esterna` DOUBLE NOT NULL, 
+	`umidita_interna` DOUBLE NOT NULL, -- kg/m^3
+	`umidita_esterna` DOUBLE NOT NULL,
+	`precipitazioni_giornaliere` DOUBLE NOT NULL, -- mm
+	PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS `AccelerometroTriAssiale` (
+	`ID` INT NOT NULL, -- FK Sensore
+	`valore_sollecitazione` DOUBLE NOT NULL, 
+	`fenomeno_misurato` VARCHAR(45) NOT NULL,
+	PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
