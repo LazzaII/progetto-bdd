@@ -321,7 +321,7 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `cognome` VARCHAR(45) NOT NULL, 
     `CF` VARCHAR(16) NOT NULL, 
     `retribuzione_oraria` INT NOT NULL,
-    `isResponsabile` TINYINT NOT NULL CHECK(`isResponsabile` IN (0, 1)) DEFAULT 0, 
+    `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
     -- nell'er avevamo messo numero lavoratori monitorabili ma secondo me va tolgo perchè il numero è fissato per legge,
     -- quindi possiamo aggiungerlo come controllo in inserimento del turno di un lavoratore
 	PRIMARY KEY (`ID`),
