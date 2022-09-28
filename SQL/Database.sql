@@ -17,9 +17,7 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
 ) ENGINE = InnoDB;
 
-
 CREATE TABLE IF NOT EXISTS `Piano` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
   `numero` INT NOT NULL, -- il numero del piano
   `largheza` INT NOT NULL,
   `lunghezza` INT NOT NULL,
@@ -29,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `Piano` (
   `altezza_max` INT DEFAULT NULL,
   `altezza_min` INT DEFAULT NULL,
   `edificio` INT NOT NULL, -- FK a edificio
-  PRIMARY KEY (`ID`),
+  PRIMARY KEY (`edificio`, `numero`),
   FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
 ) ENGINE = InnoDB;
 
@@ -97,7 +95,6 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `nome` INT NOT NULL,
-  `rischio` INT NOT NULL, -- FK a rischio
   `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10), -- dipende dal rischio ma può variare da zona a zona per questo è nell'area geografica
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
@@ -107,6 +104,14 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `tipo` VARCHAR(45) NOT NULL,
   PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `RischioArea` (
+  `area` INT NOT NULL AUTO_INCREMENT,
+  `rischio` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`area`, `rischio`),
+  FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
+  FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Calamita` (
@@ -132,16 +137,12 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
 CREATE TABLE IF NOT EXISTS `Danno` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `entita` INT NOT NULL,
-  `edificio` INT NOT NULL, -- sicuri che va messo qua? perchè sarebbe una fk all'edificio però non l'abbiamo collegata in nessun modo
-  `tipo_danno` INT NOT NULL, -- FK a tipoDanno
+  `edificio` INT NOT NULL,
+  `calamita` INT NOT NULL,
+  `tipo_danno` INT NOT NULL,
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`tipo_danno`) REFERENCES `TipoDanno` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `TipoDanno` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `nome` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`ID`)
+  FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`),
+  FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `ParteCoinvoltaDanno` (
@@ -173,15 +174,17 @@ CREATE TABLE IF NOT EXISTS `InstallazioneSensore` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `data` DATETIME NOT NULL,
   `condizione_danno` VARCHAR(45) NOT NULL,
-  `tipo_danno` INT NOT NULL, -- FK a tipo danno
+  `danno` INT NOT NULL, -- FK a tipo danno
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`tipo_danno`) REFERENCES `TipoDanno` (`ID`)
+  FOREIGN KEY (`danno`) REFERENCES `Danno` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `isRicopertoPietra` TINYINT NOT NULL CHECK (`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
+  `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
+										-- record e quella con l'id successivo, nel caso dell'ultima parete sarà tra l'ultima e la prima
   `intonaco` INT NOT NULL, -- FK a intonaco
   `pietra` INT DEFAULT NULL, -- FK a pietra
   `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
