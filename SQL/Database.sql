@@ -95,7 +95,6 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `nome` INT NOT NULL,
-  `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10), -- dipende dal rischio ma può variare da zona a zona per questo è nell'area geografica
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
 ) ENGINE = InnoDB;
@@ -109,6 +108,7 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
 CREATE TABLE IF NOT EXISTS `RischioArea` (
   `area` INT NOT NULL AUTO_INCREMENT,
   `rischio` VARCHAR(45) NOT NULL,
+  `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10),
   PRIMARY KEY (`area`, `rischio`),
   FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
   FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
@@ -125,62 +125,15 @@ CREATE TABLE IF NOT EXISTS `Calamita` (
 ) ENGINE = InnoDB;
  
 CREATE TABLE IF NOT EXISTS `AreaColpita` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
     `area` INT NOT NULL, -- FK a area geografica
     `calamita` INT NOT NULL, -- FK a calamità
-	PRIMARY KEY (`ID`),
+	PRIMARY KEY (`area`, `calamita`),
     FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
-    FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`),
-    UNIQUE (`area`, `calamita`) -- Le due FK devono essere uniche
+    FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `Danno` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `entita` INT NOT NULL,
-  `edificio` INT NOT NULL,
-  `calamita` INT NOT NULL,
-  `tipo_danno` INT NOT NULL,
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`),
-  FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `ParteCoinvoltaDanno` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `tipo` VARCHAR(45) NOT NULL,
-  `parte_danneggiata` VARCHAR(45) NOT NULL,
-  `danno` INT NOT NULL, -- FK a danno
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`danno`) REFERENCES `Danno` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `LavoroPostDanno` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `tipo_di_lavoro` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `LavoroNecessario` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `lavoro` INT NOT NULL, -- FK a lavoroPostDanno
-  `parte_coinvolta` INT NOT NULL, -- FK a parte coinvolta danno
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`lavoro`) REFERENCES `LavoroPostDanno` (`ID`),
-  FOREIGN KEY (`parte_coinvolta`) REFERENCES `ParteCoinvoltaDanno` (`ID`),
-  UNIQUE (`lavoro`, `parte_coinvolta`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `InstallazioneSensore` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `data` DATETIME NOT NULL,
-  `condizione_danno` VARCHAR(45) NOT NULL,
-  `danno` INT NOT NULL, -- FK a tipo danno
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`danno`) REFERENCES `Danno` (`ID`)
-) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Parete` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `isRicopertoPietra` TINYINT NOT NULL CHECK (`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
   `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
@@ -192,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `Parete` (
 				 -- (DA RIVEDERE NUMERAZIONE, secondo me andrebbe fatta secondo i punti cardinali, se un vano ha più ingressi non si capisce)
   `mattone` INT NOT NULL, -- FK al tipo di mattone
   `vano` INT NOT NULL, -- FK al vano
-  PRIMARY KEY (`ID`),
+  PRIMARY KEY (`id_parete_vano`, `vano`),
   FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`),
   FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`),
   FOREIGN KEY (`mattone`) REFERENCES `Mattone` (`ID`),
@@ -227,18 +180,21 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `descrizione` VARCHAR(45) NOT NULL,
-    `spessore1` INT NOT NULL, 
-    `spessore2` INT DEFAULT NULL,
-    `spessore3` INT DEFAULT NULL,
-    PRIMARY KEY (`ID`)
+	`id_intonaco_parete` INT NOT NULL,
+    `colore` VARCHAR(45) NOT NULL,
+    `spessore` INT NOT NULL, 
+    `tipo` VARCHAR(45) DEFAULT NULL,
+    `parete` INT NOT NULL,
+    `vano` INT NOT NULL,
+    PRIMARY KEY (`id_intonaco_parete`, `parete`, `vano`),    
+    FOREIGN KEY (`parete`) REFERENCES `Parete` (`id_parete_vano`),
+    FOREIGN KEY (`vano`) REFERENCES `Parete` (`vano`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Pavimentazione` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
     `forma` VARCHAR(45) NOT NULL,
-    `tipoPa` VARCHAR(12) NOT NULL CHECK (`tipoPa` IN ('parquet', 'piastrellato')),
+    `tipo` VARCHAR(12) NOT NULL CHECK (`tipo` IN ('parquet', 'piastrellato')),
     `colore` VARCHAR(45) NOT NULL,
     `materiale` VARCHAR(45) NOT NULL, -- tipo di materiale (ex. Acero per il parquet, Marmo di carrara per le piastrelle)
     `materiale_adesivo` VARCHAR(45) NOT NULL, -- con cosa sono attaccate
@@ -266,11 +222,8 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `data_approvazione` DATETIME NOT NULL,
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
-    `stadio_avanzamento` INT NOT NULL, -- FK a stadio avanzamento si aggiorna via via per sapere a che punto siamo ma serve 
-									   -- la fk anche nel progetto edilizio sennó non recuperiamo i vecchi stadi di avanzamento
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`stadio_avanzamento`) REFERENCES `StadioDiAvanzamento` (`ID`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
 ) ENGINE = InnoDB;
 
@@ -309,17 +262,14 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoro` INT NOT NULL, -- FK lavoroProgettoEdilizio
     `materiale` INT NOT NULL, -- FK a materiale
-	PRIMARY KEY (`ID`),
+	PRIMARY KEY (`lavoro`, `materiale`),
     FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`),
-    FOREIGN KEY (`materiale`) REFERENCES `Materiale` (`ID`),
-    UNIQUE (`lavoro`, `materiale`)
+    FOREIGN KEY (`materiale`) REFERENCES `Materiale` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Lavoratore` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`nome` VARCHAR(45) NOT NULL,
     `cognome` VARCHAR(45) NOT NULL, 
     `CF` VARCHAR(16) NOT NULL, 
@@ -327,39 +277,33 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
     -- nell'er avevamo messo numero lavoratori monitorabili ma secondo me va tolgo perchè il numero è fissato per legge,
     -- quindi possiamo aggiungerlo come controllo in inserimento del turno di un lavoratore
-	PRIMARY KEY (`ID`),
-    UNIQUE (`CF`)
+	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
     `progetto` INT NOT NULL, -- FK a progettoEdilizio
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`ID`),
-    FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`ID`),
-    UNIQUE (`lavoratore`, `progetto`)
+	PRIMARY KEY (`lavoratore`, `progetto`),
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`ID`),
+	PRIMARY KEY (`lavoratore`, `lavoro`),
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
     FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`),
     UNIQUE (`lavoratore`, `lavoro`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Turno` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`ora_inizio` INT NOT NULL,
     `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
-	PRIMARY KEY (`ID`)
+	PRIMARY KEY (`ora_inizio`, `ora_fine`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`capo_cantiere` INT NOT NULL, -- FK lavoratore
     `turno` INT NOT NULL, -- FK a turno
 	`giorno` DATETIME NOT NULL,
@@ -367,6 +311,8 @@ CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantie
     FOREIGN KEY (`capo_cantiere`) REFERENCES `Lavoratore` (`ID`),
     FOREIGN KEY (`turno`) REFERENCES `Turno` (`ID`),
     UNIQUE (`capo_cantiere`, `turno`, `giorno`)
+    
+    -- DA RIVEDERE QUANDO FINIAMO TURNO
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
@@ -380,44 +326,29 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`ID`),
     FOREIGN KEY (`turno`) REFERENCES `Turno` (`ID`),
     UNIQUE (`lavoratore`, `turno`, `giorno`, `mansione`)
+    
+    -- DA RIVEDERE QUANDO FINIAMO TURNO
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`distanza_da_sx` DOUBLE NOT NULL, 
 	`altezza_da_terra` DOUBLE NOT NULL,
-	`unita_di_misura` VARCHAR(4) NOT NULL, 
+	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
 	`soglia` DOUBLE NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `SensoreDiPosizione` (
-	`ID` INT NOT NULL, -- FK Sensore
-	`larghezza_sensore` DOUBLE NOT NULL, 
-	`larghezza_incrinatura_muraria` DOUBLE NOT NULL,
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`ID`) REFERENCES `sensore` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `GiroscopioTriAssiale` (
-	`ID` INT NOT NULL, -- FK Sensore
-	`sollecitazione_torsione` DOUBLE NOT NULL, 
-	`sollecitazione_accelerometrica_tri_assiale` DOUBLE NOT NULL, 
-	`temperatura_interna` DOUBLE NOT NULL, -- gradi centigradi
-	`temperatura_esterna` DOUBLE NOT NULL, 
-	`umidita_interna` DOUBLE NOT NULL, -- kg/m^3
-	`umidita_esterna` DOUBLE NOT NULL,
-	`precipitazioni_giornaliere` DOUBLE NOT NULL, -- mm
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`ID`) REFERENCES `sensore` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `AccelerometroTriAssiale` (
-	`ID` INT NOT NULL, -- FK Sensore
-	`valore_sollecitazione` DOUBLE NOT NULL, 
-	`fenomeno_misurato` VARCHAR(45) NOT NULL,
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`ID`) REFERENCES `sensore` (`ID`)
+CREATE TABLE IF NOT EXISTS `Misurazione` (
+	`id_sensore` INT NOT NOT,
+	`timestamp`TIMESTAMP NOT NULL, 
+	`isAlert` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
+	`unità_di_misura` VARCHAR NOT NULL, 
+	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
+    `valoreY` DOUBLE,
+    `valoreZ` DOUBLE,
+	PRIMARY KEY (`id_sensore`, `timestamp`),
+    FOREIGN KEY (`id_sensore`) REFERENCES `Sensore` (`ID`)
 ) ENGINE = InnoDB;
