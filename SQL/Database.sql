@@ -298,36 +298,61 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Turno` (
-	`ora_inizio` INT NOT NULL,
-    `ora_fine` INT NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
-	PRIMARY KEY (`ora_inizio`, `ora_fine`)
+	`ora_inizio` TIME NOT NULL,
+    `ora_fine` TIME NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
+	`giorno` DATE NOT NULL,
+	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
 	`capo_cantiere` INT NOT NULL, -- FK lavoratore
-    `turno` INT NOT NULL, -- FK a turno
-	`giorno` DATETIME NOT NULL,
+    `ora_inizio` TIME NOT NULL, -- FK a turno
+	`ora_fine` TIME NOT NULL,
+	`giorno` INT NOT NULL,
+	`giorno` DATE NOT NULL,
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`capo_cantiere`) REFERENCES `Lavoratore` (`ID`),
-    FOREIGN KEY (`turno`) REFERENCES `Turno` (`ID`),
-    UNIQUE (`capo_cantiere`, `turno`, `giorno`)
+    FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
+    FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
+    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
+    UNIQUE (`capo_cantiere`, `ora_inizio`, `ora_fine`, `giorno`)
     
     -- DA RIVEDERE QUANDO FINIAMO TURNO
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
-	`ID` INT NOT NULL AUTO_INCREMENT,
 	`lavoratore` INT NOT NULL, -- FK lavoratore
-    `turno` INT NOT NULL, -- FK a turno
-    `mansione` VARCHAR(45) NOT NULL,
-    `giorno` DATETIME NOT NULL,
-    `ore_lavorate` INT NOT NULL,
-	PRIMARY KEY (`ID`),
+    `ora_inizio` TIME NOT NULL, -- FK a turno
+	`ora_fine` TIME NOT NULL,
+	`giorno` DATE NOT NULL,
+	PRIMARY KEY (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`),
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`ID`),
-    FOREIGN KEY (`turno`) REFERENCES `Turno` (`ID`),
-    UNIQUE (`lavoratore`, `turno`, `giorno`, `mansione`)
+    FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
+    FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
+    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
+    UNIQUE (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`)
     
     -- DA RIVEDERE QUANDO FINIAMO TURNO
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `Mansione` (
+	`ID` INT NOT NULL, 
+	`mansione` VARCHAR NOT NULL,
+	PRIMARY KEY (`ID`)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
+	`mansione` INT NOT NULL,
+	`ora_inizio` TIME NOT NULL,
+	`ora_fine` TIME NOT NULL,
+	`giorno` DATE NOT NULL,
+	`ore` INT NOT NULL,
+	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
+	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`),
+	FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
+	FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
+	FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
+	UNIQUE (`mansione`, `ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
@@ -343,7 +368,7 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NOT,
-	`timestamp`TIMESTAMP NOT NULL, 
+	`timestamp` TIMESTAMP NOT NULL, 
 	`isAlert` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
 	`unità_di_misura` VARCHAR NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
