@@ -138,7 +138,6 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   `isRicopertoPietra` TINYINT NOT NULL CHECK (`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
   `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
 										-- record e quella con l'id successivo, nel caso dell'ultima parete sarà tra l'ultima e la prima
-  `intonaco` INT NOT NULL, -- FK a intonaco
   `pietra` INT DEFAULT NULL, -- FK a pietra
   `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
 				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire da sinistra dell'ingresso in senso orario
@@ -189,6 +188,15 @@ CREATE TABLE IF NOT EXISTS `Intonaco` (
     PRIMARY KEY (`id_intonaco_parete`, `parete`, `vano`),    
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`id_parete_vano`),
     FOREIGN KEY (`vano`) REFERENCES `Parete` (`vano`)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `IntonacoParete` (
+	`intonaco_parete` INT NOT NULL,
+	`parete_vano` INT NOT NULL,
+	`vano` INT NOT NULL,
+	FOREIGN KEY (`intonaco_parete`) REFERENCES `Intonaco` (`id_intonaco_parete`),
+	FOREIGN KEY (`parete_vano`) REFERENCES `Parete` (`id_parete_vano`),
+	FOREIGN KEY (`vano`) REFERENCES `Parete` (`vano`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Pavimentazione` (
@@ -367,10 +375,10 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
-	`id_sensore` INT NOT NOT,
+	`id_sensore` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL, 
 	`isAlert` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
-	`unità_di_misura` VARCHAR NOT NULL, 
+	`unità_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
     `valoreZ` DOUBLE,
