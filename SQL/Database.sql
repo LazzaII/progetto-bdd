@@ -324,8 +324,6 @@ CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantie
     FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
     FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
     UNIQUE (`capo_cantiere`, `ora_inizio`, `ora_fine`, `giorno`)
-    
-    -- DA RIVEDERE QUANDO FINIAMO TURNO
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
@@ -339,8 +337,6 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
     FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
     FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
     UNIQUE (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`)
-    
-    -- DA RIVEDERE QUANDO FINIAMO TURNO
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Mansione` (
