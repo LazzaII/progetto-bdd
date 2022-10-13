@@ -1,7 +1,7 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
 
 DROP DATABASE IF EXISTS SmartBuildings;
-CREATE SCHEMA SmartBuildings;
+CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
 USE SmartBuildings;
 
 SET FOREIGN_KEY_CHECKS = 0; -- per togliere il controllo sulla creazione delle FK iniziale (1 = controllo, 0 = non controllo)
@@ -11,83 +11,80 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `esiste` TINYINT NOT NULL CHECK(`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
   `tipologia` VARCHAR(45) NOT NULL,
-  `topolgia` VARCHAR(45) NOT NULL,
+  `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Piano` (
-  `numero` INT NOT NULL, -- il numero del piano
-  `largheza` INT NOT NULL,
-  `lunghezza` INT NOT NULL,
-  `altezza` INT NOT NULL,
-  `isMansardato` TINYINT NOT NULL CHECK(`isMansardato` IN (0, 1)) DEFAULT 0, -- di base non è mansardato
-  `inclinazione` INT DEFAULT NULL, -- indica l'angolo di inclinazione del soffitto
-  `altezza_max` INT DEFAULT NULL,
-  `altezza_min` INT DEFAULT NULL,
+  `numero` SMALLINT NOT NULL, -- il numero del piano
+  `altezza` SMALLINT NOT NULL,
+  `inclinazione` TINYINT DEFAULT NULL, -- indica l'angolo di inclinazione del soffitto, se è NULL signfica che non è mansardato [TINYINT perchè più di 90 gradi non può essere]
+  `altezza_min` SMALLINT DEFAULT NULL,
   `edificio` INT NOT NULL, -- FK a edificio
-  PRIMARY KEY (`edificio`, `numero`),
+  PRIMARY KEY (`numero` , `edificio`),
   FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
-  `forma` VARCHAR(45) NOT NULL, -- la forma del perimetro
-  `lunghezza_max` INT NOT NULL,
-  `altezza_max` INT NOT NULL,
-  `larghezza_max` INT NOT NULL,
-  `piano` INT NOT NULL, -- FK a piano
-  `pavimentazione` INT NOT NULL, -- FK a pavimentazione
+  `lunghezza` SMALLINT NOT NULL,
+  `larghezza` SMALLINT NOT NULL,
+  `altezza` SMALLINT NOT NULL,
+  `piano` SMALLINT NOT NULL, -- FK a piano
+  `edificio` INT NOT NULL, 
+  `parquet` INT NOT NULL, -- FK a parquet
+  `piastrella` INT NOT NULL, -- FK a piastrella
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`piano`) REFERENCES `Piano` (`ID`),
-  FOREIGN KEY (`pavimentazione`) REFERENCES `Pavimentazione` (`ID`)
+  FOREIGN KEY (`piano`, `edificio`) REFERENCES `Piano` (`numero`, `edificio`),
+  FOREIGN KEY (`parquet`) REFERENCES `Parquet` (`ID`),
+  FOREIGN KEY (`piastrella`) REFERENCES `Piastrella` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` INT NOT NULL,
-  `larghezza` INT NOT NULL,
-  `altezza` INT NOT NULL,
-  `dDaSx` INT NOT NULL, -- distanza da sinistra
-  `da` INT NOT NULL, -- punto di partenza (FK ad un vano?)
-  `a` INT NOT NULL, -- punto di arrivo (FK ad un vano?)
-  `tipologia` VARCHAR(45) NOT NULL,
+  `lunghezza` SMALLINT NOT NULL,
+  `larghezza` SMALLINT NOT NULL,
+  `altezza` SMALLINT NOT NULL,
+  `distanza_da_sx` SMALLINT NOT NULL, -- distanza da sinistra
+  `tipo` VARCHAR(45) NOT NULL,
   `apertura` TINYINT NULL CHECK (`apertura` IN(0, 1, 2)) DEFAULT NULL, -- 0 per interna 1 per esterna 2 per a scorrimento
-  `altezza_chiave` INT DEFAULT NULL,
-  `angolo_curvatura` INT DEFAULT NULL,
-  PRIMARY KEY (`ID`)
+  `altezza_chiave` SMALLINT DEFAULT NULL,
+  `angolo_curvatura` TINYINT DEFAULT NULL,
+  `parete` INT NOT NULL, -- FK a parete
+  PRIMARY KEY (`ID`),
+  FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `Balcone` (
+CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` INT NOT NULL,
-  `larghezza` INT NOT NULL,
-  `altezza` INT NOT NULL,
-  `altezza_ringhiera` INT NOT NULL,
-  `altezza_da_terra` INT NOT NULL,
+  `lunghezza` SMALLINT NOT NULL,
+  `larghezza` SMALLINT NOT NULL,
+  `altezza` SMALLINT NOT NULL,
+  `altezza_ringhiera` TINYINT NOT NULL,
+  `altezza_da_terra` SMALLINT NOT NULL, -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
--- può essere interessante un trigger per controllare l'adiacenza dei vani che hanno il/i balconi in comune
 CREATE TABLE IF NOT EXISTS `BalconeVano` ( 
-  `ID` INT NOT NULL AUTO_INCREMENT,
   `balcone` INT NOT NULL,
   `vano` INT NOT NULL,
-  PRIMARY KEY (`ID`),
+  PRIMARY KEY (`balcone`, `vano`),
   FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`),
-  FOREIGN KEY (`balcone`) REFERENCES `Balcone` (`ID`),
-  UNIQUE (`balcone`, `vano`)
+  FOREIGN KEY (`balcone`) REFERENCES `Balcone` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `larghezza` INT NOT NULL,
-  `lunghezza` INT NOT NULL,
-  `altezza` INT NOT NULL,
-  `parete` INT NOT NULL, -- FK a parete
+  `larghezza` SMALLINT NOT NULL,
+  `lunghezza` SMALLINT NOT NULL,
+  `altezza` SMALLINT NOT NULL,
+  `distanza_da_sx` SMALLINT NOT NULL,
+  `altezza__da_pavimento` SMALLINT NOT NULL,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
+  `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
 ) ENGINE = InnoDB;
@@ -95,60 +92,53 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `nome` INT NOT NULL,
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Rischio` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
-  `tipo` VARCHAR(45) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `RischioArea` (
-  `area` INT NOT NULL AUTO_INCREMENT,
-  `rischio` VARCHAR(45) NOT NULL,
+CREATE TABLE IF NOT EXISTS `Rischio` (
+  `area_geografica` INT NOT NULL,
+  `tipo` VARCHAR(45) NOT NULL,
   `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10),
-  PRIMARY KEY (`area`, `rischio`),
-  FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
-  FOREIGN KEY (`rischio`) REFERENCES `Rischio` (`ID`)
+  PRIMARY KEY (`area_geografica`, `tipo`),
+  FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Calamita` (
-  `ID` INT NOT NULL AUTO_INCREMENT,
   `tipo` VARCHAR(45) NOT NULL,
   `data` TIMESTAMP NOT NULL CHECK (`data` <= "2022-08-17 15:25:36"), -- non si può inserire una calamità che non è ancora avvenuta 
 	-- HO MESSO UNA TIMESTAMP PERCHÉ AVVIANDOLO DAVA ERRORE DICENDO CHE NON SI POTEVA USARE CURRENT_TIMESTAMP COME FUNZIONE NEL CHECK
 	-- Error Code: 3814. An expression of a check constraint 'calamita_chk_1' contains disallowed function: now.
   `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
-  PRIMARY KEY (`ID`)
+  PRIMARY KEY (`tipo`, `data`)
 ) ENGINE = InnoDB;
  
 CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `area` INT NOT NULL, -- FK a area geografica
     `calamita` INT NOT NULL, -- FK a calamità
-	PRIMARY KEY (`area`, `calamita`),
-    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
+    `data`TIMESTAMP NOT NULL, -- FK a calamità
+	PRIMARY KEY (`area`, `calamita`, `data`),
+    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`tipo`),
+    FOREIGN KEY (`data`) REFERENCES `AreaGeografica` (`data`),
     FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
 ) ENGINE = InnoDB;
 
 
 CREATE TABLE IF NOT EXISTS `Parete` (
+  `ID` INT NOT NULL AUTO_INCREMENT,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `isRicopertoPietra` TINYINT NOT NULL CHECK (`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
   `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
 										-- record e quella con l'id successivo, nel caso dell'ultima parete sarà tra l'ultima e la prima
-  `pietra` INT DEFAULT NULL, -- FK a pietra
   `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
-				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire da sinistra dell'ingresso in senso orario
-				 -- (DA RIVEDERE NUMERAZIONE, secondo me andrebbe fatta secondo i punti cardinali, se un vano ha più ingressi non si capisce)
+				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire dalla parete a nord e continuando verso est
   `mattone` INT NOT NULL, -- FK al tipo di mattone
   `vano` INT NOT NULL, -- FK al vano
-  PRIMARY KEY (`id_parete_vano`, `vano`),
-  FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`),
+  `pietra` INT DEFAULT NULL, -- FK a pietra (non tutti sono per forza rivestite in pietra)
+  PRIMARY KEY (`ID`),
   FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`),
   FOREIGN KEY (`mattone`) REFERENCES `Mattone` (`ID`),
-  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
+  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`),
+  UNIQUE (`id_parete_vano`, `vano`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Pietra` (
@@ -156,19 +146,18 @@ CREATE TABLE IF NOT EXISTS `Pietra` (
     `tipo` VARCHAR(45) NOT NULL,
     `peso_medio` INT DEFAULT 0, 
     `superfiecie_media` INT DEFAULT 0,
-    `disposizione` TINYINT NOT NULL CHECK(`disposizione` IN (0, 1)) DEFAULT 0, -- 0 verticale 1 orizzontale (non so se intendevi questo con disposizione)
-									       -- Credo che la disposizione dovrebbe essere varchar (una breve descrizione)
-									       -- ([...] pietre usate su quella parete, e qual è la loro disposizione)
+    `disposizione` TEXT NOT NULL,
     PRIMARY KEY (`ID`)
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Mattone` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
-    `isAlveolato` TINYINT NOT NULL CHECK(`isAlveolato` IN (0, 1)), -- 0 non è presente alveolatura quindi pieno 1 è alveolato
     `materiale_realizzazione` INT DEFAULT 0, 
-    `alveolatura` INT DEFAULT NULL, -- FK a alveolatura
+    `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
     PRIMARY KEY (`ID`),
-    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`)
+    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`),
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Alveolatura` (
@@ -179,59 +168,50 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
-	`id_intonaco_parete` INT NOT NULL,
+	`ID`INT NOT NULL AUTO_INCREMENT,
     `colore` VARCHAR(45) NOT NULL,
     `spessore` INT NOT NULL, 
     `tipo` VARCHAR(45) DEFAULT NULL,
-    `parete` INT NOT NULL,
-    `vano` INT NOT NULL,
-    PRIMARY KEY (`id_intonaco_parete`, `parete`, `vano`),    
-    FOREIGN KEY (`parete`) REFERENCES `Parete` (`id_parete_vano`),
-    FOREIGN KEY (`vano`) REFERENCES `Parete` (`vano`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `IntonacoParete` (
-	`intonaco_parete` INT NOT NULL,
-	`parete_vano` INT NOT NULL,
-	`vano` INT NOT NULL,
-	FOREIGN KEY (`intonaco_parete`) REFERENCES `Intonaco` (`id_intonaco_parete`),
-	FOREIGN KEY (`parete_vano`) REFERENCES `Parete` (`id_parete_vano`),
-	FOREIGN KEY (`vano`) REFERENCES `Parete` (`vano`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Pavimentazione` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `forma` VARCHAR(45) NOT NULL,
-    `tipo` VARCHAR(12) NOT NULL CHECK (`tipo` IN ('parquet', 'piastrellato')),
-    `colore` VARCHAR(45) NOT NULL,
-    `materiale` VARCHAR(45) NOT NULL, -- tipo di materiale (ex. Acero per il parquet, Marmo di carrara per le piastrelle)
-    `materiale_adesivo` VARCHAR(45) NOT NULL, -- con cosa sono attaccate
-    `lunghezza` INT NOT NULL,
-    `larghezza` INT NOT NULL, 
-    `spessore` INT NOT NULL,
-    `larghezza_ fuga` INT DEFAULT NULL, -- è presente solo se il tipo è piastrellato (=> trigger?)
-    `motivo` INT DEFAULT NULL, -- FK a motivo è presente solo è piastrellato
     PRIMARY KEY (`ID`),
-    FOREIGN KEY (`motivo`) REFERENCES `Motivo` (`ID`)
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `Motivo` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `motivo` VARCHAR(45) NOT NULL, -- descrizone del motivo
-    `isStampato` TINYINT NOT NULL CHECK(`isStampato` IN (0, 1)),
-	PRIMARY KEY (`ID`)
+CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
+	`strato` INT NOT NULL, -- numero dello strato dell'intonaco
+	`parete` INT NOT NULL,
+    `intonaco` INT NOT NULL,
+    PRIMARY KEY (`parete`, `intonaco`, `strato`),
+    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`),
+    FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `Parquet`(
+  `ID` INT NOT NULL,
+  `tipo_legno` VARCHAR(30) NOT NULL,
+  PRIMARY KEY (`ID`),
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `Piastrella`(
+  `ID` INT NOT NULL,
+  `forma` VARCHAR(30) NOT NULL,
+  `larghezza_fuga` INT NOT NULL,
+  `motivo`VARCHAR(45) NOT NULL,
+  `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
+  PRIMARY KEY (`ID`),
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
     `codice` INT NOT NULL, 
     `tipologia` VARCHAR(45) NOT NULL, -- potremmo mettere un check con i tipi di lavori possibili
     `data_presentazione` DATETIME NOT NULL,
     `data_approvazione` DATETIME NOT NULL,
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
+    `costo` INT NOT NULL,
     `edificio` INT NOT NULL, -- FK a edificio
-	PRIMARY KEY (`ID`),
+	PRIMARY KEY (`codice`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
 ) ENGINE = InnoDB;
 
@@ -239,15 +219,15 @@ CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
-    `progetto_edilizio` INT NOT NULL,
+    `descrizione` TEXT NOT NULL,
+    `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
 	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`ID`)
+    FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`codice`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`tipologia` VARCHAR(45) NOT NULL,
-    `costo` INT DEFAULT NULL,
     `isCompleto` TINYINT NOT NULL CHECK(`isCompleto` IN (0, 1)) DEFAULT 0, -- 0 non completo 1 completato
     `stadio` INT NOT NULL, -- FK allo stadio di avanzamento
 	PRIMARY KEY (`ID`),
@@ -264,8 +244,9 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
     `altezza` INT NOT NULL,
     `costituzione` VARCHAR(45) NOT NULL,
     `costo` DOUBLE NOT NULL,
-    `unita_costo` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
+    `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
+    `quantita` INT NOT NULL,
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -278,13 +259,11 @@ CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Lavoratore` (
+    `CF` VARCHAR(16) NOT NULL, 
 	`nome` VARCHAR(45) NOT NULL,
     `cognome` VARCHAR(45) NOT NULL, 
-    `CF` VARCHAR(16) NOT NULL, 
     `retribuzione_oraria` INT NOT NULL,
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
-    -- nell'er avevamo messo numero lavoratori monitorabili ma secondo me va tolgo perchè il numero è fissato per legge,
-    -- quindi possiamo aggiungerlo come controllo in inserimento del turno di un lavoratore
 	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
 
@@ -312,18 +291,18 @@ CREATE TABLE IF NOT EXISTS `Turno` (
 	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `TurnoCapo` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
-	`capo_cantiere` INT NOT NULL, -- FK lavoratore
+CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
+	`capo_turno` INT NOT NULL, -- FK lavoratore
     `ora_inizio` TIME NOT NULL, -- FK a turno
 	`ora_fine` TIME NOT NULL,
-	`giorno` INT NOT NULL,
 	`giorno` DATE NOT NULL,
+    `num_lavoratori_monitorabili` INT NOT NULL,
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`capo_cantiere`) REFERENCES `Lavoratore` (`ID`),
     FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
     FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
     FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
-    UNIQUE (`capo_cantiere`, `ora_inizio`, `ora_fine`, `giorno`)
+    UNIQUE (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
@@ -341,7 +320,7 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
 
 CREATE TABLE IF NOT EXISTS `Mansione` (
 	`ID` INT NOT NULL, 
-	`mansione` VARCHAR NOT NULL,
+	`mansione` VARCHAR(45) NOT NULL,
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
