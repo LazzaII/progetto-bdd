@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS `Vano` (
   `larghezza` SMALLINT NOT NULL,
   `altezza` SMALLINT NOT NULL,
   `piano` SMALLINT NOT NULL, -- FK a piano
-  `edificio` INT NOT NULL, 
-  `parquet` INT NOT NULL, -- FK a parquet
-  `piastrella` INT NOT NULL, -- FK a piastrella
+  `edificio` INT NOT NULL, -- FK a edificio
+  `parquet` INT, -- FK a parquet
+  `piastrella` INT, -- FK a piastrella
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`piano`, `edificio`) REFERENCES `Piano` (`numero`, `edificio`),
   FOREIGN KEY (`parquet`) REFERENCES `Parquet` (`ID`),
@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `nome` INT NOT NULL,
-  PRIMARY KEY (`ID`)
+  PRIMARY KEY (`ID`),
+  UNIQUE (`nome`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Rischio` (
@@ -147,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `Pietra` (
     `peso_medio` INT DEFAULT 0, 
     `superfiecie_media` INT DEFAULT 0,
     `disposizione` TEXT NOT NULL,
-    PRIMARY KEY (`ID`)
+    PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 ) ENGINE = InnoDB;
 
@@ -164,7 +165,8 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
     `materiale_riempimento` VARCHAR(45) NOT NULL,
     `nome` VARCHAR(45) NOT NULL,
-    PRIMARY KEY (`ID`)
+    PRIMARY KEY (`ID`),
+    UNIQUE(`nome`, `materiale_riempimento`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
@@ -189,7 +191,8 @@ CREATE TABLE IF NOT EXISTS `Parquet`(
   `ID` INT NOT NULL,
   `tipo_legno` VARCHAR(30) NOT NULL,
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`),
+  UNIQUE (`tipo_legno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Piastrella`(
@@ -239,11 +242,11 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 	`nome` VARCHAR(45) NOT NULL, 
     `cod_lotto` INT NOT NULL,
     `fornitore` VARCHAR(45) NOT NULL,
-    `largheza` INT NOT NULL,
+    `larghezza` INT NOT NULL,
     `lunghezza` INT NOT NULL,
     `altezza` INT NOT NULL,
-    `costituzione` VARCHAR(45) NOT NULL,
-    `costo` DOUBLE NOT NULL,
+    `costituzione` VARCHAR(45) NOT NULL, 
+    `costo` DOUBLE NOT NULL, -- costo ad unità
     `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
     `quantita` INT NOT NULL,
@@ -280,14 +283,13 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
 	PRIMARY KEY (`lavoratore`, `lavoro`),
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
-    FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`),
-    UNIQUE (`lavoratore`, `lavoro`)
+    FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ora_inizio` TIME NOT NULL,
     `ora_fine` TIME NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
-	`giorno` DATE NOT NULL,
+	`giorno` DATE NOT NULL, 
 	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
@@ -297,12 +299,11 @@ CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
     `num_lavoratori_monitorabili` INT NOT NULL,
-	PRIMARY KEY (`ID`),
+    PRIMARY KEY (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`),
     FOREIGN KEY (`capo_cantiere`) REFERENCES `Lavoratore` (`ID`),
     FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
     FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
-    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
-    UNIQUE (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`)
+    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
@@ -321,7 +322,8 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
 CREATE TABLE IF NOT EXISTS `Mansione` (
 	`ID` INT NOT NULL, 
 	`mansione` VARCHAR(45) NOT NULL,
-	PRIMARY KEY (`ID`)
+	PRIMARY KEY (`ID`),
+    UNIQUE (`mansione`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
@@ -350,13 +352,13 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
-	`id_sensore` INT NOT NULL,
+	`ID` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL, 
 	`isAlert` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
-	`unità_di_misura` VARCHAR(5) NOT NULL, 
+	`unita_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
     `valoreZ` DOUBLE,
-	PRIMARY KEY (`id_sensore`, `timestamp`),
+	PRIMARY KEY (`ID`, `timestamp`),
     FOREIGN KEY (`id_sensore`) REFERENCES `Sensore` (`ID`)
 ) ENGINE = InnoDB;
