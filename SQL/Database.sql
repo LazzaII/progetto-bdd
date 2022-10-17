@@ -9,7 +9,7 @@ SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule dei trigger
 
 CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `esiste` TINYINT NOT NULL CHECK(`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
+  `esiste` TINYINT NOT NULL CHECK (`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
   `tipologia` VARCHAR(45) NOT NULL,
   `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
@@ -105,24 +105,22 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Calamita` (
+  `ID` INT NOT NULL AUTO_INCREMENT, 
   `tipo` VARCHAR(45) NOT NULL,
-  `data` TIMESTAMP NOT NULL CHECK (`data` <= "2022-08-17 15:25:36"), -- non si può inserire una calamità che non è ancora avvenuta 
-	-- HO MESSO UNA TIMESTAMP PERCHÉ AVVIANDOLO DAVA ERRORE DICENDO CHE NON SI POTEVA USARE CURRENT_TIMESTAMP COME FUNZIONE NEL CHECK
-	-- Error Code: 3814. An expression of a check constraint 'calamita_chk_1' contains disallowed function: now.
-  `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
-  PRIMARY KEY (`tipo`, `data`)
+  PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
  
 CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `area` INT NOT NULL, -- FK a area geografica
     `calamita` INT NOT NULL, -- FK a calamità
-    `data`TIMESTAMP NOT NULL, -- FK a calamità
-	PRIMARY KEY (`area`, `calamita`, `data`),
-    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`tipo`),
-    FOREIGN KEY (`data`) REFERENCES `AreaGeografica` (`data`),
+    `timestamp` TIMESTAMP NOT NULL CHECK (`timestamp` <= "2022-08-17 15:25:36"), -- non si può inserire una calamità che non è ancora avvenuta 
+	-- HO MESSO UNA TIMESTAMP PERCHÉ AVVIANDOLO DAVA ERRORE DICENDO CHE NON SI POTEVA USARE CURRENT_TIMESTAMP COME FUNZIONE NEL CHECK
+	-- Error Code: 3814. An expression of a check constraint 'calamita_chk_1' contains disallowed function: now.
+    `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
+	PRIMARY KEY (`area`, `calamita`, `timestamp`),
+    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
     FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
 ) ENGINE = InnoDB;
-
 
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
@@ -212,6 +210,7 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `data_approvazione` DATETIME NOT NULL,
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
+    `data_fine_effettiva` DATETIME,
     `costo` INT NOT NULL,
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`codice`),
@@ -222,6 +221,7 @@ CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
+    `data_fine_effettiva` DATETIME,
     `descrizione` TEXT NOT NULL,
     `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
 	PRIMARY KEY (`ID`),
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
     `larghezza` INT NOT NULL,
     `lunghezza` INT NOT NULL,
     `altezza` INT NOT NULL,
-    `costituzione` VARCHAR(45) NOT NULL, 
+    `costituzione` VARCHAR(45), -- NULL nel caso di materiali già definiti (pietra, mattone, ecc)
     `costo` DOUBLE NOT NULL, -- costo ad unità
     `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
@@ -271,15 +271,15 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
-	`lavoratore` INT NOT NULL, -- FK lavoratore
+	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `progetto` INT NOT NULL, -- FK a progettoEdilizio
 	PRIMARY KEY (`lavoratore`, `progetto`),
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
-    FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`ID`)
+    FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`codice`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
-	`lavoratore` INT NOT NULL, -- FK lavoratore
+	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
 	PRIMARY KEY (`lavoratore`, `lavoro`),
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
@@ -289,34 +289,29 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ora_inizio` TIME NOT NULL,
     `ora_fine` TIME NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
-	`giorno` DATE NOT NULL, 
+	`giorno` DATE NOT NULL, -- serve perché altrimenti un lavoratore può svolgere un turno una sola volta
 	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
-	`capo_turno` INT NOT NULL, -- FK lavoratore
+	`capo_turno` VARCHAR(16) NOT NULL, -- FK lavoratore
     `ora_inizio` TIME NOT NULL, -- FK a turno
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
     `num_lavoratori_monitorabili` INT NOT NULL,
     PRIMARY KEY (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`),
-    FOREIGN KEY (`capo_cantiere`) REFERENCES `Lavoratore` (`ID`),
-    FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
-    FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
-    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`)
+    FOREIGN KEY (`capo_turno`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
-	`lavoratore` INT NOT NULL, -- FK lavoratore
+	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `ora_inizio` TIME NOT NULL, -- FK a turno
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
 	PRIMARY KEY (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`ID`),
-    FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
-    FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
-    FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
-    UNIQUE (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`)
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Mansione` (
@@ -334,10 +329,7 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 	`ore` INT NOT NULL,
 	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
 	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`),
-	FOREIGN KEY (`ora_inizio`) REFERENCES `Turno` (`ora_inizio`),
-	FOREIGN KEY (`ora_fine`) REFERENCES `Turno` (`ora_fine`),
-	FOREIGN KEY (`giorno`) REFERENCES `Turno` (`giorno`),
-	UNIQUE (`mansione`, `ora_inizio`, `ora_fine`, `giorno`)
+	FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
@@ -352,13 +344,13 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
-	`ID` INT NOT NULL,
+	`id_sensore` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL, 
-	`isAlert` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
+	`isAlert` TINYINT NOT NULL CHECK(`isAlert` IN (0, 1)),
 	`unita_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
     `valoreZ` DOUBLE,
-	PRIMARY KEY (`ID`, `timestamp`),
+	PRIMARY KEY (`id_sensore`, `timestamp`),
     FOREIGN KEY (`id_sensore`) REFERENCES `Sensore` (`ID`)
 ) ENGINE = InnoDB;
