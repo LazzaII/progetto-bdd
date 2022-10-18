@@ -1,6 +1,4 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
--- Abbiamo aggiunto gli "ON UPDATE CASCADE" perché in caso si decidesse di cambiare 
--- il tipo della PK 
 
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
@@ -8,6 +6,8 @@ USE SmartBuildings;
 
 SET FOREIGN_KEY_CHECKS = 0; -- per togliere il controllo sulla creazione delle FK iniziale (1 = controllo, 0 = non controllo)
 SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule dei trigger
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
 		ON DELETE NO ACTION -- area geografica rimossa
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_area_geografica1` ON `Edificio` (`area_geografica`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Piano` (
   `numero` SMALLINT NOT NULL, -- il numero del piano
   `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
@@ -32,6 +36,10 @@ CREATE TABLE IF NOT EXISTS `Piano` (
 		ON UPDATE CASCADE
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_edificio1` ON `Piano` (`edificio`);
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
@@ -55,6 +63,13 @@ CREATE TABLE IF NOT EXISTS `Vano` (
 		ON DELETE SET NULL -- piastrella rimossa
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_piano` ON `Vano` (`piano`);
+CREATE UNIQUE INDEX `index_edificio2` ON `Vano` (`edificio`);
+CREATE UNIQUE INDEX `index_parquet` ON `Vano` (`parquet`);
+CREATE UNIQUE INDEX `index_piastrella` ON `Vano` (`piastrella`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
@@ -72,6 +87,10 @@ CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_parete1` ON `PuntoDiAccesso` (`parete`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
   `ID` INT NOT NULL AUTO_INCREMENT,
   `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
@@ -81,6 +100,8 @@ CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a +
   `altezza_da_terra` SMALLINT NOT NULL CHECK(`altezza_da_terra` > 0), -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `BalconeVano` ( 
   `balcone` INT NOT NULL,
@@ -93,6 +114,11 @@ CREATE TABLE IF NOT EXISTS `BalconeVano` (
 		ON UPDATE CASCADE
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_vano1` ON `BalconeVano` (`vano`);
+CREATE UNIQUE INDEX `index_balcone` ON `BalconeVano` (`balcone`);
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
   `ID` INT NOT NULL AUTO_INCREMENT,
@@ -109,12 +135,18 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_finestra` ON `Finestra` (`parete`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `nome` INT NOT NULL,
   PRIMARY KEY (`ID`),
   UNIQUE (`nome`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Rischio` (
   `area_geografica` INT NOT NULL,
@@ -126,11 +158,17 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_area_geografica2` ON `Rischio` (`area_geografica`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Calamita` (
   `ID` INT NOT NULL AUTO_INCREMENT, 
   `tipo` VARCHAR(45) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
  
 CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `area` INT NOT NULL, -- FK a area geografica
@@ -145,6 +183,11 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
 			ON UPDATE CASCADE
 			ON DELETE CASCADE
 ) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_area_geografica3` ON `AreaColpita` (`area`);
+CREATE UNIQUE INDEX `index_calamita` ON `AreaColpita` (`calamita`);
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
@@ -170,124 +213,11 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   UNIQUE (`id_parete_vano`, `vano`)
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `Pietra` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `tipo` VARCHAR(45) NOT NULL,
-    `peso_medio` INT DEFAULT 0 CHECK(`peso_medio` > 0), 
-    `superficie_media` INT DEFAULT 0 CHECK(`superficie_media` > 0),
-    `disposizione` TEXT NOT NULL,
-    PRIMARY KEY (`ID`),
-    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE
-) ENGINE = InnoDB;
+CREATE UNIQUE INDEX `index_pietra` ON `Parete` (`pietra`);
+CREATE UNIQUE INDEX `index_mattone` ON `Parete` (`mattone`);
+CREATE UNIQUE INDEX `index_vano2` ON `Parete` (`vano`);
 
-CREATE TABLE IF NOT EXISTS `Mattone` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `materiale_realizzazione` INT DEFAULT 0, 
-    `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
-    PRIMARY KEY (`ID`),
-    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE SET NULL, -- alveolatura rimossa
-    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Alveolatura` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `materiale_riempimento` VARCHAR(45) NOT NULL,
-    `nome` VARCHAR(45) NOT NULL,
-    PRIMARY KEY (`ID`),
-    UNIQUE(`nome`, `materiale_riempimento`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Intonaco` (
-	`ID`INT NOT NULL AUTO_INCREMENT,
-    `colore` VARCHAR(45) NOT NULL,
-    `spessore` INT NOT NULL CHECK(`spessore` > 0), 
-    `tipo` VARCHAR(45) DEFAULT NULL,
-    PRIMARY KEY (`ID`),
-    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
-	`strato` INT NOT NULL, -- numero dello strato dell'intonaco
-	`parete` INT NOT NULL,
-    `intonaco` INT NOT NULL,
-    PRIMARY KEY (`parete`, `intonaco`, `strato`),
-    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE,
-    FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Parquet`(
-  `ID` INT NOT NULL,
-  `tipo_legno` VARCHAR(30) NOT NULL,
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE,
-  UNIQUE (`tipo_legno`)
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Piastrella`(
-  `ID` INT NOT NULL,
-  `forma` VARCHAR(30) NOT NULL,
-  `larghezza_fuga` INT NOT NULL CHECK(`larghezza_fuga` > 0),
-  `motivo`VARCHAR(45) NOT NULL,
-  `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
-  PRIMARY KEY (`ID`),
-  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
-		ON UPDATE CASCADE
-        ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
-    `codice` INT NOT NULL, 
-    `tipologia` VARCHAR(45) NOT NULL, -- potremmo mettere un check con i tipi di lavori possibili
-    `data_presentazione` DATETIME NOT NULL,
-    `data_approvazione` DATETIME NOT NULL,
-    `data_inizio` DATETIME NOT NULL,
-    `data_stima_fine` DATETIME NOT NULL,
-    `data_fine_effettiva` DATETIME,
-    `costo` INT NOT NULL CHECK(`costo` > 0),
-    `edificio` INT NOT NULL, -- FK a edificio
-	PRIMARY KEY (`codice`),
-    FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-	`data_inizio` DATETIME NOT NULL,
-    `data_stima_fine` DATETIME NOT NULL,
-    `data_fine_effettiva` DATETIME,
-    `descrizione` TEXT NOT NULL,
-    `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`codice`)
-		ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-	`tipologia` VARCHAR(45) NOT NULL,
-    `isCompleto` TINYINT NOT NULL CHECK(`isCompleto` IN (0, 1)) DEFAULT 0, -- 0 non completo 1 completato
-    `stadio` INT NOT NULL, -- FK allo stadio di avanzamento
-	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`stadio`) REFERENCES `StadioDiAvanzamento` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) ENGINE = InnoDB;
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Materiale` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
@@ -305,6 +235,167 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Pietra` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+    `tipo` VARCHAR(45) NOT NULL,
+    `peso_medio` INT DEFAULT 0 CHECK(`peso_medio` > 0), 
+    `superficie_media` INT DEFAULT 0 CHECK(`superficie_media` > 0),
+    `disposizione` TEXT NOT NULL,
+    PRIMARY KEY (`ID`),
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_materiale1` ON `Pietra` (`ID`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Mattone` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+    `materiale_realizzazione` INT DEFAULT 0, 
+    `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
+    PRIMARY KEY (`ID`),
+    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE SET NULL, -- alveolatura rimossa
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_alveolatura` ON `Mattone` (`alveolatura`);
+CREATE UNIQUE INDEX `index_materiale2` ON `Mattone` (`ID`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Alveolatura` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+    `materiale_riempimento` VARCHAR(45) NOT NULL,
+    `nome` VARCHAR(45) NOT NULL,
+    PRIMARY KEY (`ID`),
+    UNIQUE(`nome`, `materiale_riempimento`)
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Intonaco` (
+	`ID`INT NOT NULL AUTO_INCREMENT,
+    `colore` VARCHAR(45) NOT NULL,
+    `spessore` INT NOT NULL CHECK(`spessore` > 0), 
+    `tipo` VARCHAR(45) DEFAULT NULL,
+    PRIMARY KEY (`ID`),
+    FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_materiale3` ON `Intonaco` (`ID`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
+	`strato` INT NOT NULL, -- numero dello strato dell'intonaco
+	`parete` INT NOT NULL,
+    `intonaco` INT NOT NULL,
+    PRIMARY KEY (`parete`, `intonaco`, `strato`),
+    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_parete2` ON `StratoIntonaco` (`parete`);
+CREATE UNIQUE INDEX `index_intonaco` ON `StratoIntonaco` (`intonaco`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Parquet`(
+  `ID` INT NOT NULL,
+  `tipo_legno` VARCHAR(30) NOT NULL,
+  PRIMARY KEY (`ID`),
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
+  UNIQUE (`tipo_legno`)
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `Piastrella`(
+  `ID` INT NOT NULL,
+  `forma` VARCHAR(30) NOT NULL,
+  `larghezza_fuga` INT NOT NULL CHECK(`larghezza_fuga` > 0),
+  `motivo`VARCHAR(45) NOT NULL,
+  `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
+  PRIMARY KEY (`ID`),
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_materiale5` ON `Piastrella` (`ID`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
+    `codice` INT NOT NULL, 
+    `tipologia` VARCHAR(45) NOT NULL, -- potremmo mettere un check con i tipi di lavori possibili
+    `data_presentazione` DATETIME NOT NULL,
+    `data_approvazione` DATETIME NOT NULL,
+    `data_inizio` DATETIME NOT NULL,
+    `data_stima_fine` DATETIME NOT NULL,
+    `data_fine_effettiva` DATETIME,
+    `costo` INT NOT NULL CHECK(`costo` > 0),
+    `edificio` INT NOT NULL, -- FK a edificio
+	PRIMARY KEY (`codice`),
+    FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_edificio3` ON `ProgettoEdilizio` (`edificio`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+	`data_inizio` DATETIME NOT NULL,
+    `data_stima_fine` DATETIME NOT NULL,
+    `data_fine_effettiva` DATETIME,
+    `descrizione` TEXT NOT NULL,
+    `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
+	PRIMARY KEY (`ID`),
+    FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`codice`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_progetto_edilizio1` ON `StadioDiAvanzamento` (`progetto_edilizio`);
+
+-- ------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
+	`ID` INT NOT NULL AUTO_INCREMENT,
+	`tipologia` VARCHAR(45) NOT NULL,
+    `isCompleto` TINYINT NOT NULL CHECK(`isCompleto` IN (0, 1)) DEFAULT 0, -- 0 non completo 1 completato
+    `stadio` INT NOT NULL, -- FK allo stadio di avanzamento
+	PRIMARY KEY (`ID`),
+    FOREIGN KEY (`stadio`) REFERENCES `StadioDiAvanzamento` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
+) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_stadio` ON `LavoroProgettoEdilizio` (`stadio`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
 	`lavoro` INT NOT NULL, -- FK lavoroProgettoEdilizio
     `materiale` INT NOT NULL, -- FK a materiale
@@ -318,6 +409,11 @@ CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
         ON DELETE NO ACTION -- materiale rimosso ma comunque utilizzato quindi va tenuto il record
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_lavoro1` ON `MaterialeUtilizzato` (`lavoro`);
+CREATE UNIQUE INDEX `index_materiale6` ON `MaterialeUtilizzato` (`materiale`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `CF` VARCHAR(16) NOT NULL, 
 	`nome` VARCHAR(45) NOT NULL,
@@ -326,6 +422,8 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
 	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
@@ -339,6 +437,11 @@ CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_lavoratore1` ON `PartecipazioneLavoratoreProgetto` (`lavoratore`);
+CREATE UNIQUE INDEX `index_progetto_edilizio2` ON `PartecipazioneLavoratoreProgetto` (`progetto`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
@@ -351,12 +454,19 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_lavoratore2` ON `SupervisioneLavoro` (`lavoratore`);
+CREATE UNIQUE INDEX `index_lavoro2` ON `SupervisioneLavoro` (`lavoro`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ora_inizio` TIME NOT NULL,
     `ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL, -- serve perché altrimenti un lavoratore può svolgere un turno una sola volta
 	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più capi cantiere [per aumentare il numero di lavoratori contemporanei]
 	`capo_turno` VARCHAR(16) NOT NULL, -- FK lavoratore
@@ -373,6 +483,12 @@ CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_ora_inizio1` ON `LavoratoreDirigeTurno` (`ora_inizio`);
+CREATE UNIQUE INDEX `index_ora_fine1` ON `LavoratoreDirigeTurno` (`ora_fine`);
+CREATE UNIQUE INDEX `index_giorno1` ON `LavoratoreDirigeTurno` (`giorno`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `ora_inizio` TIME NOT NULL, -- FK a turno
@@ -387,12 +503,20 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_ora_inizio2` ON `SvolgimentoTurno` (`ora_inizio`);
+CREATE UNIQUE INDEX `index_ora_fine2` ON `SvolgimentoTurno` (`ora_fine`);
+CREATE UNIQUE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Mansione` (
 	`ID` INT NOT NULL, 
 	`mansione` VARCHAR(45) NOT NULL,
 	PRIMARY KEY (`ID`),
     UNIQUE (`mansione`)
 ) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 	`mansione` INT NOT NULL,
@@ -409,6 +533,13 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
+CREATE UNIQUE INDEX `index_mansione` ON `MansioneCompiutaTurno` (`mansione`);
+CREATE UNIQUE INDEX `index_ora_inizio3` ON `MansioneCompiutaTurno` (`ora_inizio`);
+CREATE UNIQUE INDEX `index_ora_fine3` ON `MansioneCompiutaTurno` (`ora_fine`);
+CREATE UNIQUE INDEX `index_giorno3` ON `MansioneCompiutaTurno` (`giorno`);
+
+-- ------------------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`distanza_da_sx` DOUBLE NOT NULL CHECK(`distanza_da_sx` > 0), 
@@ -419,6 +550,10 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
 ) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_parete3` ON `Sensore` (`parete`);
+
+-- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NULL,
@@ -433,3 +568,7 @@ CREATE TABLE IF NOT EXISTS `Misurazione` (
 		ON UPDATE CASCADE
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `index_id_sensore` ON `Misurazione` (`id_sensore`);
+
+-- ------------------------------------------------------------------------------------------
