@@ -104,8 +104,8 @@ CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a +
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `BalconeVano` ( 
-  `balcone` INT NOT NULL,
-  `vano` INT NOT NULL,
+  `balcone` INT NOT NULL, -- FK a balcone
+  `vano` INT NOT NULL, -- FK a vano
   PRIMARY KEY (`balcone`, `vano`),
   FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
 		ON UPDATE CASCADE
@@ -149,9 +149,9 @@ CREATE TABLE IF NOT EXISTS `AreaGeografica` (
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Rischio` (
-  `area_geografica` INT NOT NULL,
+  `area_geografica` INT NOT NULL, -- FK a area geografica
   `tipo` VARCHAR(45) NOT NULL,
-  `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10),
+  `coefficiente_rischio` INT NOT NULL CHECK (`coefficiente_rischio` BETWEEN 1 AND 10),
   PRIMARY KEY (`area_geografica`, `tipo`),
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
 		ON UPDATE CASCADE
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Pietra` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
+	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
     `tipo` VARCHAR(45) NOT NULL,
     `peso_medio` INT DEFAULT 0 CHECK(`peso_medio` > 0), 
     `superficie_media` INT DEFAULT 0 CHECK(`superficie_media` > 0),
@@ -254,8 +254,8 @@ CREATE UNIQUE INDEX `index_materiale1` ON `Pietra` (`ID`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Mattone` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
-    `materiale_realizzazione` INT DEFAULT 0, 
+	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
+    `materiale_realizzazione` VARCHAR(20) NOT NULL, 
     `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`)
@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
-	`ID`INT NOT NULL AUTO_INCREMENT,
+	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
     `colore` VARCHAR(45) NOT NULL,
     `spessore` INT NOT NULL CHECK(`spessore` > 0), 
     `tipo` VARCHAR(45) DEFAULT NULL,
@@ -298,8 +298,8 @@ CREATE UNIQUE INDEX `index_materiale3` ON `Intonaco` (`ID`);
 
 CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
 	`strato` INT NOT NULL, -- numero dello strato dell'intonaco
-	`parete` INT NOT NULL,
-    `intonaco` INT NOT NULL,
+	`parete` INT NOT NULL, -- FK a parete
+    `intonaco` INT NOT NULL, -- FK a intonaco
     PRIMARY KEY (`parete`, `intonaco`, `strato`),
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
 		ON UPDATE CASCADE
@@ -315,7 +315,7 @@ CREATE UNIQUE INDEX `index_intonaco` ON `StratoIntonaco` (`intonaco`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Parquet`(
-  `ID` INT NOT NULL,
+  `ID` INT NOT NULL, -- FK a materiale
   `tipo_legno` VARCHAR(30) NOT NULL,
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -329,7 +329,7 @@ CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Piastrella`(
-  `ID` INT NOT NULL,
+  `ID` INT NOT NULL, -- FK a materiale
   `forma` VARCHAR(30) NOT NULL,
   `larghezza_fuga` INT NOT NULL CHECK(`larghezza_fuga` > 0),
   `motivo`VARCHAR(45) NOT NULL,
@@ -370,7 +370,7 @@ CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
     `data_stima_fine` DATETIME NOT NULL,
     `data_fine_effettiva` DATETIME,
     `descrizione` TEXT NOT NULL,
-    `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
+    `progetto_edilizio` INT NOT NULL, -- FK a progetto edilizio
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`codice`)
 		ON UPDATE CASCADE
@@ -385,7 +385,7 @@ CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`tipologia` VARCHAR(45) NOT NULL,
     `isCompleto` TINYINT NOT NULL CHECK(`isCompleto` IN (0, 1)) DEFAULT 0, -- 0 non completo 1 completato
-    `stadio` INT NOT NULL, -- FK allo stadio di avanzamento
+    `stadio` INT NOT NULL, -- FK a stadio di avanzamento
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`stadio`) REFERENCES `StadioDiAvanzamento` (`ID`)
 		ON UPDATE CASCADE
