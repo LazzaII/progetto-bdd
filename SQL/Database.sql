@@ -1,4 +1,6 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
+-- Abbiamo aggiunto gli "ON UPDATE CASCADE" perché in caso si decidesse di cambiare 
+-- il tipo della PK 
 
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
@@ -16,14 +18,14 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`) 
 		ON UPDATE CASCADE 
-		ON DELETE SET NULL -- area geografica rimossa
+		ON DELETE NO ACTION -- area geografica rimossa
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Piano` (
   `numero` SMALLINT NOT NULL, -- il numero del piano
-  `altezza` SMALLINT NOT NULL,
-  `inclinazione` TINYINT DEFAULT NULL, -- indica l'angolo di inclinazione del soffitto, se è NULL signfica che non è mansardato [TINYINT perchè più di 90 gradi non può essere]
-  `altezza_min` SMALLINT DEFAULT NULL,
+  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
+  `inclinazione` TINYINT DEFAULT NULL CHECK(`inclinazione` > 0), -- indica l'angolo di inclinazione del soffitto, se è NULL signfica che non è mansardato [TINYINT perchè più di 90 gradi non può essere]
+  `altezza_min` SMALLINT DEFAULT NULL CHECK(`altezza_min` > 0),
   `edificio` INT NOT NULL, -- FK a edificio
   PRIMARY KEY (`numero` , `edificio`),
   FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`) 
@@ -34,9 +36,9 @@ CREATE TABLE IF NOT EXISTS `Piano` (
 CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
-  `lunghezza` SMALLINT NOT NULL,
-  `larghezza` SMALLINT NOT NULL,
-  `altezza` SMALLINT NOT NULL,
+  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
+  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
+  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
   `piano` SMALLINT NOT NULL, -- FK a piano
   `edificio` INT NOT NULL, -- FK a edificio
   `parquet` INT, -- FK a parquet
@@ -55,14 +57,14 @@ CREATE TABLE IF NOT EXISTS `Vano` (
 
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT NOT NULL,
-  `larghezza` SMALLINT NOT NULL,
-  `altezza` SMALLINT NOT NULL,
-  `distanza_da_sx` SMALLINT NOT NULL, -- distanza da sinistra
+  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
+  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
+  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
+  `distanza_da_sx` SMALLINT NOT NULL CHECK(`distanza_da_sx` > 0), -- distanza da sinistra
   `tipo` VARCHAR(45) NOT NULL,
   `apertura` TINYINT NULL CHECK (`apertura` IN(0, 1, 2)) DEFAULT NULL, -- 0 per interna 1 per esterna 2 per a scorrimento
-  `altezza_chiave` SMALLINT DEFAULT NULL,
-  `angolo_curvatura` TINYINT DEFAULT NULL,
+  `altezza_chiave` SMALLINT DEFAULT NULL CHECK(`altezza_chiave` > 0),
+  `angolo_curvatura` TINYINT DEFAULT NULL CHECK(`angolo_curvatura` > 0),
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
@@ -72,11 +74,11 @@ CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
 
 CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT NOT NULL,
-  `larghezza` SMALLINT NOT NULL,
-  `altezza` SMALLINT NOT NULL,
-  `altezza_ringhiera` TINYINT NOT NULL,
-  `altezza_da_terra` SMALLINT NOT NULL, -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
+  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
+  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
+  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
+  `altezza_ringhiera` TINYINT NOT NULL CHECK(`altezza_ringhiera` > 0),
+  `altezza_da_terra` SMALLINT NOT NULL CHECK(`altezza_da_terra` > 0), -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -94,11 +96,11 @@ CREATE TABLE IF NOT EXISTS `BalconeVano` (
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `larghezza` SMALLINT NOT NULL,
-  `lunghezza` SMALLINT NOT NULL,
-  `altezza` SMALLINT NOT NULL,
-  `distanza_da_sx` SMALLINT NOT NULL,
-  `altezza__da_pavimento` SMALLINT NOT NULL,
+  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
+  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
+  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
+  `distanza_da_sx` SMALLINT NOT NULL CHECK(`distanza_da_sx` > 0),
+  `altezza_da_pavimento` SMALLINT NOT NULL CHECK(`altezza_da_pavimento` > 0),
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
@@ -133,9 +135,7 @@ CREATE TABLE IF NOT EXISTS `Calamita` (
 CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `area` INT NOT NULL, -- FK a area geografica
     `calamita` INT NOT NULL, -- FK a calamità
-    `timestamp` TIMESTAMP NOT NULL CHECK (`timestamp` <= "2022-08-17 15:25:36"), -- non si può inserire una calamità che non è ancora avvenuta 
-	-- HO MESSO UNA TIMESTAMP PERCHÉ AVVIANDOLO DAVA ERRORE DICENDO CHE NON SI POTEVA USARE CURRENT_TIMESTAMP COME FUNZIONE NEL CHECK
-	-- Error Code: 3814. An expression of a check constraint 'calamita_chk_1' contains disallowed function: now.
+    `timestamp` TIMESTAMP NOT NULL,
     `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
 	PRIMARY KEY (`area`, `calamita`, `timestamp`),
     FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`)
@@ -160,10 +160,10 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`)
 		ON UPDATE CASCADE
-        ON DELETE SET NULL, -- pietra rimossa
+        ON DELETE NO ACTION, -- pietra rimossa
   FOREIGN KEY (`mattone`) REFERENCES `Mattone` (`ID`)
 		ON UPDATE CASCADE
-        ON DELETE SET NULL, -- mattone rimosso
+        ON DELETE NO ACTION, -- mattone rimosso
   FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
 		ON UPDATE CASCADE
         ON DELETE CASCADE,
@@ -173,8 +173,8 @@ CREATE TABLE IF NOT EXISTS `Parete` (
 CREATE TABLE IF NOT EXISTS `Pietra` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
     `tipo` VARCHAR(45) NOT NULL,
-    `peso_medio` INT DEFAULT 0, 
-    `superfiecie_media` INT DEFAULT 0,
+    `peso_medio` INT DEFAULT 0 CHECK(`peso_medio` > 0), 
+    `superficie_media` INT DEFAULT 0 CHECK(`superficie_media` > 0),
     `disposizione` TEXT NOT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 CREATE TABLE IF NOT EXISTS `Intonaco` (
 	`ID`INT NOT NULL AUTO_INCREMENT,
     `colore` VARCHAR(45) NOT NULL,
-    `spessore` INT NOT NULL, 
+    `spessore` INT NOT NULL CHECK(`spessore` > 0), 
     `tipo` VARCHAR(45) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS `Parquet`(
 CREATE TABLE IF NOT EXISTS `Piastrella`(
   `ID` INT NOT NULL,
   `forma` VARCHAR(30) NOT NULL,
-  `larghezza_fuga` INT NOT NULL,
+  `larghezza_fuga` INT NOT NULL CHECK(`larghezza_fuga` > 0),
   `motivo`VARCHAR(45) NOT NULL,
   `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
   PRIMARY KEY (`ID`),
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
     `data_fine_effettiva` DATETIME,
-    `costo` INT NOT NULL,
+    `costo` INT NOT NULL CHECK(`costo` > 0),
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`codice`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
@@ -294,20 +294,21 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 	`nome` VARCHAR(45) NOT NULL, 
     `cod_lotto` INT NOT NULL,
     `fornitore` VARCHAR(45) NOT NULL,
-    `larghezza` INT NOT NULL,
-    `lunghezza` INT NOT NULL,
-    `altezza` INT NOT NULL,
+    `larghezza` INT NOT NULL CHECK(`larghezza` > 0),
+    `lunghezza` INT NOT NULL CHECK(`lunghezza` > 0),
+    `altezza` INT NOT NULL CHECK(`altezza` > 0),
     `costituzione` VARCHAR(45), -- NULL nel caso di materiali già definiti (pietra, mattone, ecc)
-    `costo` DOUBLE NOT NULL, -- costo ad unità
+    `costo` DOUBLE NOT NULL CHECK(`costo` > 0), -- costo ad unità
     `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
-    `quantita` INT NOT NULL,
+    `quantita` INT NOT NULL CHECK(`quantita` > 0),
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
 	`lavoro` INT NOT NULL, -- FK lavoroProgettoEdilizio
     `materiale` INT NOT NULL, -- FK a materiale
+    `quantita` INT NOT NULL CHECK(`quantita` > 0), 
 	PRIMARY KEY (`lavoro`, `materiale`),
     FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
 		ON UPDATE CASCADE
@@ -321,7 +322,7 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `CF` VARCHAR(16) NOT NULL, 
 	`nome` VARCHAR(45) NOT NULL,
     `cognome` VARCHAR(45) NOT NULL, 
-    `retribuzione_oraria` INT NOT NULL,
+    `retribuzione_oraria` INT NOT NULL CHECK(`retribuzione_oraria` > 0),
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
 	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
@@ -352,7 +353,7 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 
 CREATE TABLE IF NOT EXISTS `Turno` (
 	`ora_inizio` TIME NOT NULL,
-    `ora_fine` TIME NOT NULL, -- check per vedere che l'ora di fine sia maggiore di quella di inizio? (=> trigger?)
+    `ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL, -- serve perché altrimenti un lavoratore può svolgere un turno una sola volta
 	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
@@ -398,7 +399,7 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 	`ora_inizio` TIME NOT NULL,
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
-	`ore` INT NOT NULL,
+	`ore` INT NOT NULL CHECK(`ore` > 0),
 	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
 	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`)
 		ON UPDATE CASCADE
@@ -410,8 +411,8 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
-	`distanza_da_sx` DOUBLE NOT NULL, 
-	`altezza_da_terra` DOUBLE NOT NULL,
+	`distanza_da_sx` DOUBLE NOT NULL CHECK(`distanza_da_sx` > 0), 
+	`altezza_da_terra` DOUBLE NOT NULL CHECK(`altezza_da_terra` > 0),
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
 	`soglia` DOUBLE NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
