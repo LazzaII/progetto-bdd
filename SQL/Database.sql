@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
   `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
+  FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`) 
+		ON UPDATE CASCADE 
+		ON DELETE SET NULL -- area geografica rimossa
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Piano` (
@@ -24,7 +26,9 @@ CREATE TABLE IF NOT EXISTS `Piano` (
   `altezza_min` SMALLINT DEFAULT NULL,
   `edificio` INT NOT NULL, -- FK a edificio
   PRIMARY KEY (`numero` , `edificio`),
-  FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
+  FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`) 
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Vano` (
@@ -38,9 +42,15 @@ CREATE TABLE IF NOT EXISTS `Vano` (
   `parquet` INT, -- FK a parquet
   `piastrella` INT, -- FK a piastrella
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`piano`, `edificio`) REFERENCES `Piano` (`numero`, `edificio`),
-  FOREIGN KEY (`parquet`) REFERENCES `Parquet` (`ID`),
+  FOREIGN KEY (`piano`, `edificio`) REFERENCES `Piano` (`numero`, `edificio`)
+		ON UPDATE CASCADE
+		ON DELETE CASCADE,
+  FOREIGN KEY (`parquet`) REFERENCES `Parquet` (`ID`)
+		ON UPDATE CASCADE
+		ON DELETE SET NULL, -- parquet rimosso
   FOREIGN KEY (`piastrella`) REFERENCES `Piastrella` (`ID`)
+		ON UPDATE CASCADE
+		ON DELETE SET NULL -- piastrella rimossa
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
@@ -56,6 +66,8 @@ CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
@@ -72,8 +84,12 @@ CREATE TABLE IF NOT EXISTS `BalconeVano` (
   `balcone` INT NOT NULL,
   `vano` INT NOT NULL,
   PRIMARY KEY (`balcone`, `vano`),
-  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`),
+  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
   FOREIGN KEY (`balcone`) REFERENCES `Balcone` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
@@ -87,6 +103,8 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
@@ -102,6 +120,8 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
   `coefficiente_ rischio` INT NOT NULL CHECK (`coefficiente_ rischio` BETWEEN 1 AND 10),
   PRIMARY KEY (`area_geografica`, `tipo`),
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Calamita` (
@@ -118,8 +138,12 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
 	-- Error Code: 3814. An expression of a check constraint 'calamita_chk_1' contains disallowed function: now.
     `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
 	PRIMARY KEY (`area`, `calamita`, `timestamp`),
-    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`),
+    FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`)
+			ON UPDATE CASCADE
+			ON DELETE CASCADE,
     FOREIGN KEY (`calamita`) REFERENCES `Calamita` (`ID`)
+			ON UPDATE CASCADE
+			ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Parete` (
@@ -134,9 +158,15 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   `vano` INT NOT NULL, -- FK al vano
   `pietra` INT DEFAULT NULL, -- FK a pietra (non tutti sono per forza rivestite in pietra)
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`),
-  FOREIGN KEY (`mattone`) REFERENCES `Mattone` (`ID`),
-  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`),
+  FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE SET NULL, -- pietra rimossa
+  FOREIGN KEY (`mattone`) REFERENCES `Mattone` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE SET NULL, -- mattone rimosso
+  FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
   UNIQUE (`id_parete_vano`, `vano`)
 ) ENGINE = InnoDB;
 
@@ -148,6 +178,8 @@ CREATE TABLE IF NOT EXISTS `Pietra` (
     `disposizione` TEXT NOT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Mattone` (
@@ -155,8 +187,12 @@ CREATE TABLE IF NOT EXISTS `Mattone` (
     `materiale_realizzazione` INT DEFAULT 0, 
     `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
     PRIMARY KEY (`ID`),
-    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`),
+    FOREIGN KEY (`alveolatura`) REFERENCES `Alveolatura` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE SET NULL, -- alveolatura rimossa
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Alveolatura` (
@@ -174,6 +210,8 @@ CREATE TABLE IF NOT EXISTS `Intonaco` (
     `tipo` VARCHAR(45) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
@@ -181,15 +219,21 @@ CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
 	`parete` INT NOT NULL,
     `intonaco` INT NOT NULL,
     PRIMARY KEY (`parete`, `intonaco`, `strato`),
-    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`),
+    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
     FOREIGN KEY (`intonaco`) REFERENCES `Intonaco` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Parquet`(
   `ID` INT NOT NULL,
   `tipo_legno` VARCHAR(30) NOT NULL,
   PRIMARY KEY (`ID`),
-  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`),
+  FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE,
   UNIQUE (`tipo_legno`)
 ) ENGINE = InnoDB;
 
@@ -201,6 +245,8 @@ CREATE TABLE IF NOT EXISTS `Piastrella`(
   `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
+		ON UPDATE CASCADE
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
@@ -215,6 +261,8 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`codice`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
@@ -226,6 +274,8 @@ CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
     `progetto_edilizio` INT NOT NULL, -- Fk progetto edilizio
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`progetto_edilizio`) REFERENCES `ProgettoEdilizio` (`codice`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
@@ -235,6 +285,8 @@ CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
     `stadio` INT NOT NULL, -- FK allo stadio di avanzamento
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`stadio`) REFERENCES `StadioDiAvanzamento` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Materiale` (
@@ -257,8 +309,12 @@ CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
 	`lavoro` INT NOT NULL, -- FK lavoroProgettoEdilizio
     `materiale` INT NOT NULL, -- FK a materiale
 	PRIMARY KEY (`lavoro`, `materiale`),
-    FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`),
+    FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     FOREIGN KEY (`materiale`) REFERENCES `Materiale` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION -- materiale rimosso ma comunque utilizzato quindi va tenuto il record
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Lavoratore` (
@@ -274,16 +330,24 @@ CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `progetto` INT NOT NULL, -- FK a progettoEdilizio
 	PRIMARY KEY (`lavoratore`, `progetto`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`codice`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
     `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
 	PRIMARY KEY (`lavoratore`, `lavoro`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Turno` (
@@ -300,8 +364,12 @@ CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più
 	`giorno` DATE NOT NULL,
     `num_lavoratori_monitorabili` INT NOT NULL,
     PRIMARY KEY (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`),
-    FOREIGN KEY (`capo_turno`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`capo_turno`) REFERENCES `Lavoratore` (`CF`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` ( 
@@ -310,8 +378,12 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
 	PRIMARY KEY (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`),
-    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`),
+    FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Mansione` (
@@ -328,8 +400,12 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 	`giorno` DATE NOT NULL,
 	`ore` INT NOT NULL,
 	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
-	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`),
+	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION,
 	FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
@@ -353,4 +429,6 @@ CREATE TABLE IF NOT EXISTS `Misurazione` (
     `valoreZ` DOUBLE,
 	PRIMARY KEY (`id_sensore`, `timestamp`),
     FOREIGN KEY (`id_sensore`) REFERENCES `Sensore` (`ID`)
+		ON UPDATE CASCADE
+        ON DELETE NO ACTION
 ) ENGINE = InnoDB;
