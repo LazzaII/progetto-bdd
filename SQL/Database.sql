@@ -11,7 +11,7 @@ SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule dei trigger
 
 CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `esiste` TINYINT NOT NULL CHECK (`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
+  `isFinito` TINYINT NOT NULL CHECK (`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
   `tipologia` VARCHAR(45) NOT NULL,
   `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
