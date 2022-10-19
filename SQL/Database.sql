@@ -11,7 +11,7 @@ SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule dei trigger
 
 CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `isFinito` TINYINT NOT NULL CHECK (`esiste` IN (0, 1)) DEFAULT 0, -- di base è in costruzione quindi se è un nuovo edificio sicuramente ancora non è finito
+  `isFinito` TINYINT NOT NULL CHECK (`isFinito` IN (0, 1)) DEFAULT 0, -- 1 finito, 0 no
   `tipologia` VARCHAR(45) NOT NULL,
   `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
@@ -473,7 +473,7 @@ CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più
     `ora_inizio` TIME NOT NULL, -- FK a turno
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
-    `num_lavoratori_monitorabili` INT NOT NULL,
+    `num_lavoratori_monitorabili` INT NOT NULL, -- andava a creare troppi valori null inserendolo in lavoratore
     PRIMARY KEY (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`),
     FOREIGN KEY (`capo_turno`) REFERENCES `Lavoratore` (`CF`)
 		ON UPDATE CASCADE
