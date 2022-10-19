@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `isFinito` TINYINT NOT NULL CHECK (`isFinito` IN (0, 1)) DEFAULT 0, -- 1 finito, 0 no
   `tipologia` VARCHAR(45) NOT NULL,
-  `stato`VARCHAR(10) NOT NULL CHECK(`stato` IN ('demolire', 'critico', 'buone', 'ottimo')), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
+  `stato` INT NOT NULL CHECK(`stato` BETWEEN 1 AND 100), --  critico = grosse ristrutturazioni, buone = piccole ristrutturazioni
   `area_geografica` INT NOT NULL, -- FK a area geografica
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`area_geografica`) REFERENCES `AreaGeografica` (`ID`) 
