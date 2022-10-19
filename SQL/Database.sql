@@ -545,7 +545,6 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 	`distanza_da_sx` DOUBLE NOT NULL CHECK(`distanza_da_sx` > 0), 
 	`altezza_da_terra` DOUBLE NOT NULL CHECK(`altezza_da_terra` > 0),
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
-	`soglia` DOUBLE NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
