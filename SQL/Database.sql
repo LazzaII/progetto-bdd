@@ -27,9 +27,9 @@ CREATE UNIQUE INDEX `index_area_geografica1` ON `Edificio` (`area_geografica`);
 
 CREATE TABLE IF NOT EXISTS `Piano` (
   `numero` SMALLINT NOT NULL, -- il numero del piano
-  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
-  `inclinazione` TINYINT DEFAULT NULL CHECK(`inclinazione` > 0), -- indica l'angolo di inclinazione del soffitto, se è NULL signfica che non è mansardato [TINYINT perchè più di 90 gradi non può essere]
-  `altezza_min` SMALLINT DEFAULT NULL CHECK(`altezza_min` > 0),
+  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `inclinazione` TINYINT UNSIGNED DEFAULT NULL, -- indica l'angolo di inclinazione del soffitto, se è NULL signfica che non è mansardato [TINYINT perchè più di 90 gradi non può essere]
+  `altezza_min` SMALLINT UNSIGNED DEFAULT NULL,
   `edificio` INT NOT NULL, -- FK a edificio
   PRIMARY KEY (`numero` , `edificio`),
   FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`) 
@@ -44,9 +44,9 @@ CREATE UNIQUE INDEX `index_edificio1` ON `Piano` (`edificio`);
 CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
-  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
-  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
-  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
+  `lunghezza` SMALLINT UNSIGNED NOT NULL,
+  `larghezza` SMALLINT UNSIGNED NOT NULL,
+  `altezza` SMALLINT UNSIGNED NOT NULL,
   `piano` SMALLINT NOT NULL, -- FK a piano
   `edificio` INT NOT NULL, -- FK a edificio
   `parquet` INT, -- FK a parquet
@@ -72,14 +72,14 @@ CREATE UNIQUE INDEX `index_piastrella` ON `Vano` (`piastrella`);
 
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
-  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
-  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
-  `distanza_da_sx` SMALLINT NOT NULL CHECK(`distanza_da_sx` > 0), -- distanza da sinistra
+  `lunghezza` SMALLINT UNSIGNED NOT NULL,
+  `larghezza` SMALLINT UNSIGNED NOT NULL,
+  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `distanza_da_sx` SMALLINT UNSIGNED NOT NULL, -- distanza da sinistra
   `tipo` VARCHAR(45) NOT NULL,
   `apertura` TINYINT NULL CHECK (`apertura` IN(0, 1, 2)) DEFAULT NULL, -- 0 per interna 1 per esterna 2 per a scorrimento
-  `altezza_chiave` SMALLINT DEFAULT NULL CHECK(`altezza_chiave` > 0),
-  `angolo_curvatura` TINYINT DEFAULT NULL CHECK(`angolo_curvatura` > 0),
+  `altezza_chiave` SMALLINT UNSIGNED DEFAULT NULL ,
+  `angolo_curvatura` TINYINT UNSIGNED DEFAULT NULL,
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
@@ -93,11 +93,11 @@ CREATE UNIQUE INDEX `index_parete1` ON `PuntoDiAccesso` (`parete`);
 
 CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
-  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
-  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
-  `altezza_ringhiera` TINYINT NOT NULL CHECK(`altezza_ringhiera` > 0),
-  `altezza_da_terra` SMALLINT NOT NULL CHECK(`altezza_da_terra` > 0), -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
+  `lunghezza` SMALLINT UNSIGNED NOT NULL,
+  `larghezza` SMALLINT UNSIGNED NOT NULL,
+  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `altezza_ringhiera` TINYINT UNSIGNED NOT NULL,
+  `altezza_da_terra` SMALLINT UNSIGNED NOT NULL, -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -122,11 +122,11 @@ CREATE UNIQUE INDEX `index_balcone` ON `BalconeVano` (`balcone`);
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `larghezza` SMALLINT NOT NULL CHECK(`larghezza` > 0),
-  `lunghezza` SMALLINT NOT NULL CHECK(`lunghezza` > 0),
-  `altezza` SMALLINT NOT NULL CHECK(`altezza` > 0),
-  `distanza_da_sx` SMALLINT NOT NULL CHECK(`distanza_da_sx` > 0),
-  `altezza_da_pavimento` SMALLINT NOT NULL CHECK(`altezza_da_pavimento` > 0),
+  `larghezza` SMALLINT UNSIGNED NOT NULL,
+  `lunghezza` SMALLINT UNSIGNED NOT NULL,
+  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `distanza_da_sx` SMALLINT UNSIGNED NOT NULL ,
+  `altezza_da_pavimento` SMALLINT UNSIGNED NOT NULL,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
@@ -224,14 +224,14 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 	`nome` VARCHAR(45) NOT NULL, 
     `cod_lotto` INT NOT NULL,
     `fornitore` VARCHAR(45) NOT NULL,
-    `larghezza` INT NOT NULL CHECK(`larghezza` > 0),
-    `lunghezza` INT NOT NULL CHECK(`lunghezza` > 0),
-    `altezza` INT NOT NULL CHECK(`altezza` > 0),
+    `larghezza` INT UNSIGNED NOT NULL,
+    `lunghezza` INT UNSIGNED NOT NULL,
+    `altezza` INT UNSIGNED NOT NULL,
     `costituzione` VARCHAR(45), -- NULL nel caso di materiali già definiti (pietra, mattone, ecc)
-    `costo` DOUBLE NOT NULL CHECK(`costo` > 0), -- costo ad unità
+    `costo` DOUBLE UNSIGNED NOT NULL, -- costo ad unità
     `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL,
-    `quantita` INT NOT NULL CHECK(`quantita` > 0),
+    `quantita` INT UNSIGNED NOT NULL,
 	PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -240,8 +240,8 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 CREATE TABLE IF NOT EXISTS `Pietra` (
 	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
     `tipo` VARCHAR(45) NOT NULL,
-    `peso_medio` INT DEFAULT 0 CHECK(`peso_medio` > 0), 
-    `superficie_media` INT DEFAULT 0 CHECK(`superficie_media` > 0),
+    `peso_medio` INT UNSIGNED NOT NULL, 
+    `superficie_media` INT UNSIGNED NOT NULL,
     `disposizione` TEXT NOT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 CREATE TABLE IF NOT EXISTS `Intonaco` (
 	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
     `colore` VARCHAR(45) NOT NULL,
-    `spessore` INT NOT NULL CHECK(`spessore` > 0), 
+    `spessore` INT UNSIGNED NOT NULL, 
     `tipo` VARCHAR(45) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -331,7 +331,7 @@ CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
 CREATE TABLE IF NOT EXISTS `Piastrella`(
   `ID` INT NOT NULL, -- FK a materiale
   `forma` VARCHAR(30) NOT NULL,
-  `larghezza_fuga` INT NOT NULL CHECK(`larghezza_fuga` > 0),
+  `larghezza_fuga` INT UNSIGNED NOT NULL,
   `motivo`VARCHAR(45) NOT NULL,
   `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
   PRIMARY KEY (`ID`),
@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
     `data_fine_effettiva` DATETIME,
-    `costo` INT NOT NULL CHECK(`costo` > 0),
+    `costo` INT UNSIGNED NOT NULL,
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`codice`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)
@@ -399,7 +399,7 @@ CREATE UNIQUE INDEX `index_stadio` ON `LavoroProgettoEdilizio` (`stadio`);
 CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
 	`lavoro` INT NOT NULL, -- FK lavoroProgettoEdilizio
     `materiale` INT NOT NULL, -- FK a materiale
-    `quantita` INT NOT NULL CHECK(`quantita` > 0), 
+    `quantita` INT UNSIGNED NOT NULL, 
 	PRIMARY KEY (`lavoro`, `materiale`),
     FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
 		ON UPDATE CASCADE
@@ -418,7 +418,7 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `CF` VARCHAR(16) NOT NULL, 
 	`nome` VARCHAR(45) NOT NULL,
     `cognome` VARCHAR(45) NOT NULL, 
-    `retribuzione_oraria` INT NOT NULL CHECK(`retribuzione_oraria` > 0),
+    `retribuzione_oraria` INT UNSIGNED NOT NULL,
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
 	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
@@ -523,7 +523,7 @@ CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
 	`ora_inizio` TIME NOT NULL,
 	`ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL,
-	`ore` INT NOT NULL CHECK(`ore` > 0),
+	`ore` INT UNSIGNED NOT NULL,
 	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
 	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`)
 		ON UPDATE CASCADE
@@ -542,8 +542,7 @@ CREATE UNIQUE INDEX `index_giorno3` ON `MansioneCompiutaTurno` (`giorno`);
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
-	`distanza_da_sx` DOUBLE NOT NULL CHECK(`distanza_da_sx` > 0), 
-	`altezza_da_terra` DOUBLE NOT NULL CHECK(`altezza_da_terra` > 0),
+	`distanza_da_sx` DOUBLE UNSIGNED NOT NULL, 
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
 	`soglia` DOUBLE NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
