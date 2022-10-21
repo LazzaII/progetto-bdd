@@ -463,7 +463,8 @@ CREATE TABLE IF NOT EXISTS `Turno` (
 	`ora_inizio` TIME NOT NULL,
     `ora_fine` TIME NOT NULL,
 	`giorno` DATE NOT NULL, -- serve perché altrimenti un lavoratore può svolgere un turno una sola volta
-	PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
+	`mansione` VARCHAR(45) NOT NULL,
+    PRIMARY KEY (`ora_inizio`, `ora_fine`, `giorno`)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------------------------------------
@@ -506,37 +507,6 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
 CREATE UNIQUE INDEX `index_ora_inizio2` ON `SvolgimentoTurno` (`ora_inizio`);
 CREATE UNIQUE INDEX `index_ora_fine2` ON `SvolgimentoTurno` (`ora_fine`);
 CREATE UNIQUE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
-
--- ------------------------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `Mansione` (
-	`ID` INT NOT NULL, 
-	`mansione` VARCHAR(45) NOT NULL,
-	PRIMARY KEY (`ID`),
-    UNIQUE (`mansione`)
-) ENGINE = InnoDB;
-
--- ------------------------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `MansioneCompiutaTurno` (
-	`mansione` INT NOT NULL,
-	`ora_inizio` TIME NOT NULL,
-	`ora_fine` TIME NOT NULL,
-	`giorno` DATE NOT NULL,
-	`ore` INT UNSIGNED NOT NULL,
-	PRIMARY KEY (`mansione`, `ora_inizio`, `ora_fine`, `giorno`),
-	FOREIGN KEY (`mansione`) REFERENCES `Mansione` (`ID`)
-		ON UPDATE CASCADE
-        ON DELETE NO ACTION,
-	FOREIGN KEY (`ora_inizio`, `ora_fine`, `giorno`) REFERENCES `Turno` (`ora_inizio`, `ora_fine`, `giorno`)
-		ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) ENGINE = InnoDB;
-
-CREATE UNIQUE INDEX `index_mansione` ON `MansioneCompiutaTurno` (`mansione`);
-CREATE UNIQUE INDEX `index_ora_inizio3` ON `MansioneCompiutaTurno` (`ora_inizio`);
-CREATE UNIQUE INDEX `index_ora_fine3` ON `MansioneCompiutaTurno` (`ora_fine`);
-CREATE UNIQUE INDEX `index_giorno3` ON `MansioneCompiutaTurno` (`giorno`);
 
 -- ------------------------------------------------------------------------------------------
 
