@@ -222,17 +222,18 @@ CREATE UNIQUE INDEX `index_vano2` ON `Parete` (`vano`);
 CREATE TABLE IF NOT EXISTS `Materiale` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`nome` VARCHAR(45) NOT NULL, 
-    `cod_lotto` INT NOT NULL,
-    `fornitore` VARCHAR(45) NOT NULL,
-    `larghezza` INT UNSIGNED NOT NULL,
-    `lunghezza` INT UNSIGNED NOT NULL,
-    `altezza` INT UNSIGNED NOT NULL,
+    `cod_lotto` INT NOT NULL DEFAULT 0,
+    `fornitore` VARCHAR(45) NOT NULL DEFAULT "",
+    `larghezza` INT UNSIGNED NOT NULL DEFAULT 0,
+    `lunghezza` INT UNSIGNED NOT NULL DEFAULT 0,
+    `altezza` INT UNSIGNED NOT NULL DEFAULT 0,
     `costituzione` VARCHAR(45), -- NULL nel caso di materiali già definiti (pietra, mattone, ecc)
-    `costo` DOUBLE UNSIGNED NOT NULL, -- costo ad unità
-    `unita` VARCHAR(2) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
-    `data_acquisto` DATETIME NOT NULL,
-    `quantita` INT UNSIGNED NOT NULL,
-	PRIMARY KEY (`ID`)
+    `costo` DOUBLE UNSIGNED NOT NULL DEFAULT 0, -- costo ad unità
+    `unita` VARCHAR(4) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
+    `data_acquisto` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `quantita` INT UNSIGNED NOT NULL DEFAULT 0,
+	PRIMARY KEY (`ID`),
+    UNIQUE(`nome`)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------------------------------------
