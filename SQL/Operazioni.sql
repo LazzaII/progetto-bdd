@@ -107,22 +107,42 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
--- Dato in ingresso l'id di un dipendente calcola il costo totale della manodopera del dipendente, tiene conto     --
--- della maggiorzione del 30% in caso di ore di straordinario.                                                     --
+-- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
+-- tiene conto della maggiorzione del 30% in caso di ore di straordinario.                                         --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS calcoloCostoManodopera;
 DELIMITER $$
-CREATE PROCEDURE calcoloCostoManodopera(IN _idOperaio INT) 
+CREATE PROCEDURE calcoloCostoManodopera(IN _cfOperaio VARCHAR(16), OUT _costo DOUBLE) 
 BEGIN
-	
-    IF NOT EXISTS (SELECT 1 FROM `Lavoratore` L WHERE L.`ID` = _idOperaio)
+    # Se il lavoratore inserito non è presente si interrompe l'esecuzione
+    IF NOT EXISTS (SELECT 1 FROM `Lavoratore` L WHERE L.`CF` = _cfOperaio)
 	THEN 
 		SIGNAL SQLSTATE '45000' 
-		SET MESSAGE_TEXT = '[ERROR] Operaio non presente';
+		SET MESSAGE_TEXT = '[ERROR] Lavoratore non presente';
 	END IF;
 		
+    DROP TABLE IF EXISTS costoManodoperaProgetto; 
+    CREATE TABLE costoManodoperaProgetto (
+		operaio VARCHAR(16) NOT NULL, 
+        progetto INT NOT NULL,
+        costo DOUBLE,
+        PRIMARY KEY(operaio, progetto)
+    );
     
+    INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
+    SELECT L.`CF` as operaio, PE.`codice` as progetto, SUM(IF(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`) <= 8, (L.`retribuzione_oraria`*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`))), (L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)) - 8)))) AS costo 
+    FROM `ProgettoEdilizio` PE
+    JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+    JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+    JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
+    JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
+    JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
+    JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
+    JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
+    JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
+				   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+	GROUP BY L.`CF`, PE.`codice`, T.`giorno`, T.`ora_inizio`, T.`ora_fine`;
 END $$
 DELIMITER ;
 
@@ -150,3 +170,4 @@ DELIMITER ;
 --                                   OPERATION 8                                    --
 -- ================================================================================ --
 
+SELECT HOUR("09:00:00") - HOUR("08:00:00");

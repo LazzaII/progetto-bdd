@@ -419,27 +419,27 @@ CREATE TABLE IF NOT EXISTS `Lavoratore` (
     `CF` VARCHAR(16) NOT NULL, 
 	`nome` VARCHAR(45) NOT NULL,
     `cognome` VARCHAR(45) NOT NULL, 
-    `retribuzione_oraria` INT UNSIGNED NOT NULL,
+    `retribuzione_oraria` DOUBLE UNSIGNED NOT NULL,
     `tipo` VARCHAR(13) NOT NULL CHECK(`tipo` IN ('semplice', 'responsabile', 'capo cantiere')),
 	PRIMARY KEY (`CF`)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreProgetto` (
+CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreLavoro` (
 	`lavoratore` VARCHAR(16) NOT NULL, -- FK lavoratore
-    `progetto` INT NOT NULL, -- FK a progettoEdilizio
-	PRIMARY KEY (`lavoratore`, `progetto`),
+    `lavoro` INT NOT NULL, -- FK a lavoroProgettoEdilizio
+	PRIMARY KEY (`lavoratore`, `lavoro`),
     FOREIGN KEY (`lavoratore`) REFERENCES `Lavoratore` (`CF`)
 		ON UPDATE CASCADE
         ON DELETE NO ACTION,
-    FOREIGN KEY (`progetto`) REFERENCES `ProgettoEdilizio` (`codice`)
+    FOREIGN KEY (`lavoro`) REFERENCES `LavoroProgettoEdilizio` (`ID`)
 		ON UPDATE CASCADE
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_lavoratore1` ON `PartecipazioneLavoratoreProgetto` (`lavoratore`);
-CREATE UNIQUE INDEX `index_progetto_edilizio2` ON `PartecipazioneLavoratoreProgetto` (`progetto`);
+CREATE UNIQUE INDEX `index_lavoratore1` ON `PartecipazioneLavoratoreLavoro` (`lavoratore`);
+CREATE UNIQUE INDEX `index_lavoro2` ON `PartecipazioneLavoratoreLavoro` (`lavoro`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -456,7 +456,7 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
 ) ENGINE = InnoDB;
 
 CREATE UNIQUE INDEX `index_lavoratore2` ON `SupervisioneLavoro` (`lavoratore`);
-CREATE UNIQUE INDEX `index_lavoro2` ON `SupervisioneLavoro` (`lavoro`);
+CREATE UNIQUE INDEX `index_lavoro3` ON `SupervisioneLavoro` (`lavoro`);
 
 -- ------------------------------------------------------------------------------------------
 
