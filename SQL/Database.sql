@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a +
   `larghezza` SMALLINT UNSIGNED NOT NULL,
   `altezza` SMALLINT UNSIGNED NOT NULL,
   `altezza_ringhiera` TINYINT UNSIGNED NOT NULL,
-  `altezza_da_terra` SMALLINT UNSIGNED NOT NULL, -- RIDONDANZA (DA VALUTARE SE TENERE) (tenere conto che è una ridondanza che non viene mai aggiornata => ridondandte solo il valore)
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
@@ -220,7 +219,8 @@ CREATE UNIQUE INDEX `index_vano2` ON `Parete` (`vano`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Materiale` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
+	`ID` INT NOT NULL AUTO_INCREMENT, -- Quando viene inserito un mattone, pietra, ecc si inserisce prima un materiale e si crea
+                                      -- l'associazione alla foreign key
 	`nome` VARCHAR(45) NOT NULL, 
     `cod_lotto` INT NOT NULL DEFAULT 0,
     `fornitore` VARCHAR(45) NOT NULL DEFAULT "",
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Pietra` (
-	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
+	`ID` INT NOT NULL, -- FK a materiale
     `tipo` VARCHAR(45) NOT NULL,
     `peso_medio` INT UNSIGNED NOT NULL, 
     `superficie_media` INT UNSIGNED NOT NULL,
@@ -255,7 +255,7 @@ CREATE UNIQUE INDEX `index_materiale1` ON `Pietra` (`ID`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Mattone` (
-	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
+	`ID` INT NOT NULL, -- FK a materiale
     `materiale_realizzazione` VARCHAR(20) NOT NULL, 
     `alveolatura` INT DEFAULT NULL, -- FK a alveolatura (se null allora è pieno)
     PRIMARY KEY (`ID`),
@@ -273,7 +273,7 @@ CREATE UNIQUE INDEX `index_materiale2` ON `Mattone` (`ID`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Alveolatura` (
-	`ID` INT NOT NULL AUTO_INCREMENT,
+	`ID` INT NOT NULL,
     `materiale_riempimento` VARCHAR(45) NOT NULL,
     `nome` VARCHAR(45) NOT NULL,
     PRIMARY KEY (`ID`),
@@ -283,7 +283,7 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
-	`ID` INT NOT NULL AUTO_INCREMENT, -- FK a materiale
+	`ID` INT NOT NULL, -- FK a materiale
     `colore` VARCHAR(45) NOT NULL,
     `spessore` INT UNSIGNED NOT NULL, 
     `tipo` VARCHAR(45) DEFAULT NULL,

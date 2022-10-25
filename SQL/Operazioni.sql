@@ -1,5 +1,3 @@
-# Naturalmente il file è ancora vuoto ma almeno è pronto su github [sembra che con operazioni si intenda solo procedure e funzioni ma informiamoci]
-# [mi sono basato sui progetti vecchi]
 USE SmartBuildings;
 
 -- =============================================================================================================== --
@@ -108,7 +106,7 @@ DELIMITER ;
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
 -- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
--- tiene conto della maggiorzione del 30% in caso di ore di straordinario.                                         --
+-- suddiviso per ogni progetto. Tiene conto della maggiorzione del 30% in caso di ore di straordinario.                                         --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS calcoloCostoManodopera;
@@ -131,7 +129,10 @@ BEGIN
     );
     
     INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
-    SELECT L.`CF` as operaio, PE.`codice` as progetto, SUM(IF(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`) <= 8, (L.`retribuzione_oraria`*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`))), (L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)) - 8)))) AS costo 
+    SELECT L.`CF` as operaio, PE.`codice` as progetto, 
+		SUM (IF(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`) <= 8, (L.`retribuzione_oraria`*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`))), 
+			-- else
+			(L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)) - 8)))) AS costo 
     FROM `ProgettoEdilizio` PE
     JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
     JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
