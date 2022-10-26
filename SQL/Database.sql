@@ -1,4 +1,6 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
+-- Il costo si misura in euro
+-- Se l'unita di misura è "pz" il prezzo è al pezzos
 
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
@@ -44,9 +46,9 @@ CREATE UNIQUE INDEX `index_edificio1` ON `Piano` (`edificio`);
 CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
-  `lunghezza` SMALLINT UNSIGNED NOT NULL,
-  `larghezza` SMALLINT UNSIGNED NOT NULL,
-  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `lunghezza` DOUBLE UNSIGNED NOT NULL,
+  `larghezza` DOUBLE UNSIGNED NOT NULL,
+  `altezza` DOUBLE UNSIGNED NOT NULL,
   `piano` SMALLINT NOT NULL, -- FK a piano
   `edificio` INT NOT NULL, -- FK a edificio
   `parquet` INT, -- FK a parquet
@@ -72,9 +74,9 @@ CREATE UNIQUE INDEX `index_piastrella` ON `Vano` (`piastrella`);
 
 CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT UNSIGNED NOT NULL,
-  `larghezza` SMALLINT UNSIGNED NOT NULL,
-  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `lunghezza` DOUBLE UNSIGNED NOT NULL,
+  `larghezza` DOUBLE UNSIGNED NOT NULL,
+  `altezza` DOUBLE UNSIGNED NOT NULL,
   `distanza_da_sx` SMALLINT UNSIGNED NOT NULL, -- distanza da sinistra
   `tipo` VARCHAR(45) NOT NULL,
   `apertura` TINYINT NULL CHECK (`apertura` IN(0, 1, 2)) DEFAULT NULL, -- 0 per interna 1 per esterna 2 per a scorrimento
@@ -93,9 +95,9 @@ CREATE UNIQUE INDEX `index_parete1` ON `PuntoDiAccesso` (`parete`);
 
 CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a + vani
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `lunghezza` SMALLINT UNSIGNED NOT NULL,
-  `larghezza` SMALLINT UNSIGNED NOT NULL,
-  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `lunghezza` DOUBLE UNSIGNED NOT NULL,
+  `larghezza` DOUBLE UNSIGNED NOT NULL,
+  `altezza` DOUBLE UNSIGNED NOT NULL,
   `altezza_ringhiera` TINYINT UNSIGNED NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
@@ -121,9 +123,9 @@ CREATE UNIQUE INDEX `index_balcone` ON `BalconeVano` (`balcone`);
 
 CREATE TABLE IF NOT EXISTS `Finestra` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `larghezza` SMALLINT UNSIGNED NOT NULL,
-  `lunghezza` SMALLINT UNSIGNED NOT NULL,
-  `altezza` SMALLINT UNSIGNED NOT NULL,
+  `lunghezza` DOUBLE UNSIGNED NOT NULL,
+  `larghezza` DOUBLE UNSIGNED NOT NULL,
+  `altezza` DOUBLE UNSIGNED NOT NULL,
   `distanza_da_sx` SMALLINT UNSIGNED NOT NULL ,
   `altezza_da_pavimento` SMALLINT UNSIGNED NOT NULL,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
@@ -140,7 +142,7 @@ CREATE UNIQUE INDEX `index_finestra` ON `Finestra` (`parete`);
 
 CREATE TABLE IF NOT EXISTS `AreaGeografica` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `nome` INT NOT NULL,
+  `nome` VARCHAR(30) NOT NULL,
   PRIMARY KEY (`ID`),
   UNIQUE (`nome`)
 ) ENGINE = InnoDB;
@@ -224,14 +226,15 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 	`nome` VARCHAR(45) NOT NULL, 
     `cod_lotto` INT NOT NULL DEFAULT 0,
     `fornitore` VARCHAR(45) NOT NULL DEFAULT "",
-    `larghezza` INT UNSIGNED NOT NULL DEFAULT 0,
-    `lunghezza` INT UNSIGNED NOT NULL DEFAULT 0,
-    `altezza` INT UNSIGNED NOT NULL DEFAULT 0,
+    `larghezza` DOUBLE UNSIGNED NOT NULL DEFAULT 0,
+    `lunghezza` DOUBLE UNSIGNED NOT NULL DEFAULT 0,
+    `altezza` DOUBLE UNSIGNED NOT NULL DEFAULT 0,
     `costituzione` VARCHAR(45), -- NULL nel caso di materiali già definiti (pietra, mattone, ecc)
     `costo` DOUBLE UNSIGNED NOT NULL DEFAULT 0, -- costo ad unità
     `unita` VARCHAR(4) NOT NULL, -- unità di misura (costo per kg, hg, g, mq, mc, ecc)
     `data_acquisto` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `quantita` INT UNSIGNED NOT NULL DEFAULT 0,
+    `quantita` DOUBLE UNSIGNED NOT NULL DEFAULT 0,
+    `colore` VARCHAR(25) DEFAULT "",
 	PRIMARY KEY (`ID`),
     UNIQUE(`nome`)
 ) ENGINE = InnoDB;
@@ -273,9 +276,10 @@ CREATE UNIQUE INDEX `index_materiale2` ON `Mattone` (`ID`);
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Alveolatura` (
-	`ID` INT NOT NULL,
-    `materiale_riempimento` VARCHAR(45) NOT NULL,
+	`ID` INT NOT NULL AUTO_INCREMENT,
+    `materiale_riempimento` VARCHAR(45),
     `nome` VARCHAR(45) NOT NULL,
+    `descrizione` VARCHAR(45) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     UNIQUE(`nome`, `materiale_riempimento`)
 ) ENGINE = InnoDB;
@@ -332,7 +336,7 @@ CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
 CREATE TABLE IF NOT EXISTS `Piastrella`(
   `ID` INT NOT NULL, -- FK a materiale
   `forma` VARCHAR(30) NOT NULL,
-  `larghezza_fuga` INT UNSIGNED NOT NULL,
+  `larghezza_fuga` DOUBLE UNSIGNED NOT NULL,
   `motivo`VARCHAR(45) NOT NULL,
   `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
   PRIMARY KEY (`ID`),

@@ -78,8 +78,8 @@ DELIMITER ;
 -- Procedura di aggiornamento materiale, può essere usata anche per inserire un nuovo materiale
 DROP PROCEDURE IF EXISTS aggiornamentoMateriale;
 DELIMITER $$
-CREATE PROCEDURE aggiornamentoMateriale(IN _nome INT, IN _quantita INT UNSIGNED, IN _costo INT, IN _unita VARCHAR(4), IN _larghezza INT, IN _lunghezza INT,
-										IN _altezza INT, IN _costituzione INT, IN _colore VARCHAR(45), IN _fornitore VARCHAR(45), IN _data_acquisto DATE, IN _cod_lotto INT)
+CREATE PROCEDURE aggiornamentoMateriale(IN _nome VARCHAR(45), IN _cod_lotto INT UNSIGNED, IN _fornitore VARCHAR(45), IN _lunghezza DOUBLE, IN _larghezza DOUBLE, IN _altezza DOUBLE,
+										IN _costituzione VARCHAR(45), IN _costo DOUBLE, IN _unita VARCHAR(4), IN _data_acquisto DATE, IN _quantita DOUBLE, IN _colore VARCHAR(25))
 BEGIN
 		#VAR
         DECLARE idMateriale INT DEFAULT NULL;
@@ -90,8 +90,9 @@ BEGIN
 		
 		IF idMateriale IS NULL
 		THEN -- se non è prensente lo crea
-			INSERT INTO `Materiale` VALUES (_nome, _cod_lotto, _fornitore, _larghezza, _lunghezza, _altezza,
-											_costituzione, _costituzione, _unita, _data_acquisto, _quantita);
+			INSERT INTO `Materiale` (`nome`, `cod_lotto`, `fornitore`, `larghezza`, `lunghezza`, `altezza`, `costituzione`, `costo`, `unita`, `data_acquisto`, `quantita`, `colore`) 
+									VALUES (_nome, _cod_lotto, _fornitore, _larghezza, _lunghezza, _altezza,
+								            _costituzione, _costo, _unita, _data_acquisto, _quantita, _colore);
 		ELSE -- se è presente lo aggiorna
 			UPDATE `Materiale` M 
 			SET M.`quantita` = _quantita, M.`costo` = _costo, M.`unita` = _unita, M.`larghezza` = _larghezza,
@@ -128,22 +129,44 @@ BEGIN
         PRIMARY KEY(operaio, progetto)
     );
     
+    WITH OreLavoratoreProgetto AS (
+		SELECT L.`CF` as operaio, PE.`codice` as progetto, T.`ora_fine` - T.`ora_inizio` as oreLavorate
+		FROM `ProgettoEdilizio` PE
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+		JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
+		JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
+		JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
+		JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
+		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
+		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
+					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+		GROUP BY L.`CF`, PE.`codice`, T.`giorno`;
+    )
+    SELECT * FROM ProgettoEdilizio;
+    
+    WITH oreLavorateProgetto AS (
+		SELECT L.`CF` as operaio, PE.`codice` as progetto, SUM(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)), T.`giorno`
+		FROM `ProgettoEdilizio` PE
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+		JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
+		JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
+		JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
+		JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
+		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
+		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
+					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
+	)
     INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
-    SELECT L.`CF` as operaio, PE.`codice` as progetto, 
-		SUM (IF(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`) <= 8, (L.`retribuzione_oraria`*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`))), 
+    SELECT OLP.`operaio`, OLP.`progetto`,  
+		SUM(IF(OLP.oreLavorate <= 8, (L.`retribuzione_oraria`*OLP.`oreLavorate`)), 
 			-- else
-			(L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)) - 8)))) AS costo 
-    FROM `ProgettoEdilizio` PE
-    JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
-    JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
-    JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
-    JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
-    JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
-    JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
-    JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
-    JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
-				   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-	GROUP BY L.`CF`, PE.`codice`, T.`giorno`, T.`ora_inizio`, T.`ora_fine`;
+			(L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(OLP.`oreLavorate` - 8)))) AS costo 
+    FROM oreLavorateProgetto OLP
+    JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
+	GROUP BY OLP.`operaio`, OLP.`progetto`, OLP.`giorno`;
 END $$
 DELIMITER ;
 
@@ -170,3 +193,4 @@ DELIMITER ;
 -- ================================================================================ --
 --                                   OPERATION 8                                    --
 -- ================================================================================ --
+
