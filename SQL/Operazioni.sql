@@ -15,20 +15,15 @@ CREATE PROCEDURE inserimentoMaterialeUtilizzato(IN _nome VARCHAR(45), IN _quanti
 BEGIN
     # VAR
     DECLARE idMateriale INT DEFAULT NULL;
-    DECLARE idLAvoro INT DEFAULT NULL;
 	DECLARE quantitaRimasta INT DEFAULT 0;
 	DECLARE tmp INT DEFAULT NULL;
     
     # MAIN
-	-- Cerchiamo se il lavoro è presente
-	SELECT LPE.`ID` INTO idLavoro
-	FROM `LavoroProgettoEdilizio` LPE WHERE LPE.`ID` = _IDlavoro;
-	
-	-- Se il lavoro non è presente
-	IF idLavoro IS NULL
-	THEN
+	-- controllo se il lavoro è presente
+	IF NOT EXISTS (SELECT 1 FROM `LavoroProgettoEdilizio` LPE WHERE LPE.`ID` = _IDlavoro)
+	THEN 
 		SIGNAL SQLSTATE '45000' 
-		SET MESSAGE_TEXT = '[ERROR] Il LavoroProgettoEdilizio inserito non è valido';
+		SET MESSAGE_TEXT = '[ERROR] LavoroProgettoEdilizio non presente';
 	END IF;
     
     -- Cerchiamo se il materiale è presente
@@ -75,10 +70,10 @@ BEGIN
 END $$
 DELIMITER ;
 
--- Procedura di aggiornamento materiale, può essere usata anche per inserire un nuovo materiale
-DROP PROCEDURE IF EXISTS aggiornamentoMateriale;
+-- Procedura di aggiornamento materiale, in caso il materiale non sia presente lo aggiunge
+DROP PROCEDURE IF EXISTS valorizzazioneMateriale;
 DELIMITER $$
-CREATE PROCEDURE aggiornamentoMateriale(IN _nome VARCHAR(45), IN _cod_lotto INT UNSIGNED, IN _fornitore VARCHAR(45), IN _lunghezza DOUBLE, IN _larghezza DOUBLE, IN _altezza DOUBLE,
+CREATE PROCEDURE valorizzazioneMateriale(IN _nome VARCHAR(45), IN _cod_lotto INT UNSIGNED, IN _fornitore VARCHAR(45), IN _lunghezza DOUBLE, IN _larghezza DOUBLE, IN _altezza DOUBLE,
 										IN _costituzione VARCHAR(45), IN _costo DOUBLE, IN _unita VARCHAR(4), IN _data_acquisto DATE, IN _quantita DOUBLE, IN _colore VARCHAR(25))
 BEGIN
 		#VAR
@@ -107,14 +102,16 @@ DELIMITER ;
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
 -- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
--- suddiviso per ogni progetto. Tiene conto della maggiorzione del 30% in caso di ore di straordinario.                                         --
+-- suddiviso per ogni progetto, rende una temporary table. Tiene conto della maggiorzione del 30% in caso di ore   --
+-- di straordinario.                                                                                               --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS calcoloCostoManodopera;
 DELIMITER $$
-CREATE PROCEDURE calcoloCostoManodopera(IN _cfOperaio VARCHAR(16), OUT _costo DOUBLE) 
+CREATE PROCEDURE calcoloCostoManodopera(IN _cfOperaio VARCHAR(16)) 
 BEGIN
-    # Se il lavoratore inserito non è presente si interrompe l'esecuzione
+	# MAIN
+    -- Se il lavoratore inserito non è presente si interrompe l esecuzione
     IF NOT EXISTS (SELECT 1 FROM `Lavoratore` L WHERE L.`CF` = _cfOperaio)
 	THEN 
 		SIGNAL SQLSTATE '45000' 
@@ -129,24 +126,9 @@ BEGIN
         PRIMARY KEY(operaio, progetto)
     );
     
-    WITH OreLavoratoreProgetto AS (
-		SELECT L.`CF` as operaio, PE.`codice` as progetto, T.`ora_fine` - T.`ora_inizio` as oreLavorate
-		FROM `ProgettoEdilizio` PE
-		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
-		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
-		JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
-		JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
-		JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
-		JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
-		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
-		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
-					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-		GROUP BY L.`CF`, PE.`codice`, T.`giorno`;
-    )
-    SELECT * FROM ProgettoEdilizio;
-    
-    WITH oreLavorateProgetto AS (
-		SELECT L.`CF` as operaio, PE.`codice` as progetto, SUM(HOUR(T.`ora_fine`) - HOUR(T.`ora_inizio`)), T.`giorno`
+    INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
+    WITH oreLavorateProgetto AS ( -- 
+		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`)) AS minutiLavorati, T.`giorno`
 		FROM `ProgettoEdilizio` PE
 		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
@@ -159,20 +141,88 @@ BEGIN
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
 		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
 	)
-    INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
     SELECT OLP.`operaio`, OLP.`progetto`,  
-		SUM(IF(OLP.oreLavorate <= 8, (L.`retribuzione_oraria`*OLP.`oreLavorate`)), 
+		SUM(IF(OLP.minutiLavorati/60) <= 8, L.`retribuzione_oraria`*OLP.minutiLavorati/60, 
 			-- else
-			(L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*(OLP.`oreLavorate` - 8)))) AS costo 
+			L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*((OLP.minutiLavorati/60) - 8)))) AS costo -- maggiorazione del 30% per gli straordinari
     FROM oreLavorateProgetto OLP
     JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
 	GROUP BY OLP.`operaio`, OLP.`progetto`, OLP.`giorno`;
 END $$
 DELIMITER ;
 
--- ================================================================================ --
---                                   OPERATION 3                                    --
--- ================================================================================ --
+-- =============================================================================================================== --
+-- 													OPERATION 3        		  									   --
+-- Dato in ingresso un lavoratore (ID), la mansione, il giorno, ora fine e inizio inserisce il turno lavorativo    --
+-- nel database. La procedura controlla che un lavoratore non stia svolgendo un altra mansione nelle stesse ore    --
+-- e controlla che il totale delle ore lavorate durante la giornata non sia superiore a 13 numero massimo fissato  --
+-- per legge. Se non è presente un turno con quella mansione procede a crearla.									   --																   														
+-- =============================================================================================================== --
+
+DROP PROCEDURE IF EXISTS mansioneLavorata;
+DELIMITER $$
+CREATE PROCEDURE mansioneLavorata(IN _cfOperaio VARCHAR(16), IN _mansione VARCHAR(45), IN _giorno DATE, IN _inizio INT, IN _fine INT)
+BEGIN
+	# VAR
+	DECLARE nOre INT DEFAULT NULL;
+
+	# MAIN
+	--  Se il lavoratore inserito non è presente si interrompe l esecuzione
+    IF NOT EXISTS ( SELECT 1 FROM `Lavoratore` L WHERE L.`CF` = _cfOperaio)
+	THEN 
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] Lavoratore non presente';
+	END IF;
+
+	-- Se uno dei dati inseriti del turno è nullo esce
+	IF _mansione IS NULL OR _giorno IS NULL OR _inizio IS NULL OR _fine IS NULL
+	THEN
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] Dati inseriti non validi';
+	END IF;
+
+	-- controllo per vedere se il lavoratore ha svolto una mansione in quel giorno
+	IF NOT EXISTS (SELECT 1 FROM `SvolgimentoTurno` ST WHERE ST.`giorno` = _giorno AND ST.`lavoratore` = _idLavoratore)
+	THEN 	
+		IF NOT EXISTS (SELECT 1 FROM `Turno` T WHERE T.`giorno` = _giorno AND T.`mansione` = _mansione AND T.`ora_inizio` = _inizio AND T.`ora_fine` = _fine)
+		THEN
+			-- se non esiste il turno viene inserito sia il turno che poi lo "svolge" turno
+			INSERT INTO `Turno` VALUES (_inizio, _fine, _giorno, _mansione);
+
+			INSERT INTO `SvolgimentoTurno` VALUES (_cfOperaio, _inizio, _fine, _giorno);
+		ELSE
+			INSERT INTO `SvolgimentoTurno` VALUES (_cfOperaio, _inizio, _fine, _giorno);
+		END IF;
+	ELSE -- controllo per vedere se è l'operaio sta svolgendo un altro turno in concomittanza
+		IF EXISTS (SELECT 1 FROM `SvolgimentoTurno` ST WHERE ST.`giorno` = _giorno AND ST.`lavoratore` = _idLavoratore 
+					AND (ST.`ora_fine` > _inizio OR ST.`ora_inizio` < _fine OR (ST.`ora_inizio` > _inizio AND ST.`ora_fine` < _fine)))
+		THEN
+			SIGNAL SQLSTATE '45000' 
+			SET MESSAGE_TEXT = '[ERROR] Operaio inserito impegnato in un altro turno';
+		ELSE -- se non lo sta svolgendo si controlla che le ore totali inserite non superino 13
+			SELECT SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', ST.`ora_inizio`), CONCAT('0000-01-01 ', ST.`ora_fine`))) INTO nOre
+			FROM `SvolgimentoTurno` ST
+			WHERE ST.`giorno` = _giorno AND ST.`lavoratore` = _idLavoratore;
+
+			IF (nOre + TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', _inizio), CONCAT('0000-01-01 ', _fine)) < 680) -- 13 ore = 680 minuti, differenza tra le ore del nuovo turno
+			THEN -- se la differenze è accettibile si controlla se esiste già un turno
+				IF NOT EXISTS (SELECT 1 FROM `Turno` T WHERE T.`giorno` = _giorno AND T.`mansione` = _mansione AND T.`ora_inizio` = _inizio AND T.`ora_fine` = _fine)
+				THEN
+					-- se non esiste il turno viene inserito sia il turno che poi lo "svolge" turno
+					INSERT INTO `Turno` VALUES (_inizio, _fine, _giorno, _mansione);
+
+					INSERT INTO `SvolgimentoTurno` VALUES (_cfOperaio, _inizio, _fine, _giorno);
+				ELSE
+					INSERT INTO `SvolgimentoTurno` VALUES (_cfOperaio, _inizio, _fine, _giorno);
+				END IF;
+			ELSE
+				SIGNAL SQLSTATE '45000' 
+				SET MESSAGE_TEXT = '[ERROR] Il totale delle ore lavorate supera il massimo lavorabile giornalmente';
+			END IF;
+		END IF;
+	END IF;
+END $$
+DELIMITER ;
 
 -- ================================================================================ --
 --                                   OPERATION 4                                    --

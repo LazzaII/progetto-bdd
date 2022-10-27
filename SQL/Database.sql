@@ -1,6 +1,7 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
 -- Il costo si misura in euro
--- Se l'unita di misura è "pz" il prezzo è al pezzos
+-- Se l'unita di misura è "pz" il prezzo è al pezzo
+-- I pesi sono espressi al kg
 
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
@@ -193,7 +194,6 @@ CREATE UNIQUE INDEX `index_calamita` ON `AreaColpita` (`calamita`);
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
-  `isRicopertoPietra` TINYINT NOT NULL CHECK (`isRicopertoPietra` IN (0, 1)) DEFAULT 0,
   `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
 										-- record e quella con l'id successivo, nel caso dell'ultima parete sarà tra l'ultima e la prima
   `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
@@ -244,8 +244,8 @@ CREATE TABLE IF NOT EXISTS `Materiale` (
 CREATE TABLE IF NOT EXISTS `Pietra` (
 	`ID` INT NOT NULL, -- FK a materiale
     `tipo` VARCHAR(45) NOT NULL,
-    `peso_medio` INT UNSIGNED NOT NULL, 
-    `superficie_media` INT UNSIGNED NOT NULL,
+    `peso_medio` DOUBLE UNSIGNED NOT NULL, 
+    `superficie_media` DOUBLE UNSIGNED NOT NULL,
     `disposizione` TEXT NOT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -288,8 +288,7 @@ CREATE TABLE IF NOT EXISTS `Alveolatura` (
 
 CREATE TABLE IF NOT EXISTS `Intonaco` (
 	`ID` INT NOT NULL, -- FK a materiale
-    `colore` VARCHAR(45) NOT NULL,
-    `spessore` INT UNSIGNED NOT NULL, 
+    `spessore` DOUBLE UNSIGNED NOT NULL, 
     `tipo` VARCHAR(45) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
@@ -321,12 +320,11 @@ CREATE UNIQUE INDEX `index_intonaco` ON `StratoIntonaco` (`intonaco`);
 
 CREATE TABLE IF NOT EXISTS `Parquet`(
   `ID` INT NOT NULL, -- FK a materiale
-  `tipo_legno` VARCHAR(30) NOT NULL,
+  `disposizione` TEXT NOT NULL,
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 		ON UPDATE CASCADE
         ON DELETE CASCADE,
-  UNIQUE (`tipo_legno`)
 ) ENGINE = InnoDB;
 
 CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
