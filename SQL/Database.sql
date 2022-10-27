@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS `Parquet`(
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`ID`) REFERENCES `Materiale`(`ID`)
 		ON UPDATE CASCADE
-        ON DELETE CASCADE,
+        ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
