@@ -1,6 +1,27 @@
 USE SmartBuildings;
 
 -- =============================================================================================================== --
+-- 													FUNZIONI DI UTILITÀ       		  							   --
+-- =============================================================================================================== --
+-- Funzione per il calcolo del costo giornaliero della manodopera, tiene conto della maggiorazione per gli         --
+-- straordinari 																								   --
+DROP FUNCTION IF EXISTS costoManodoperaGiornaliera;
+DELIMITER $$
+CREATE FUNCTION costoManodoperaGiornaliera (minutiLavorati INT, retribuzione DOUBLE)
+RETURNS DOUBLE DETERMINISTIC 
+BEGIN
+	#MAIN
+	IF (minutiLavorati/60) <= 8 -- si controlla se ha eseguito ore di straordinario
+    THEN 
+		RETURN retribuzione * minutiLavorati/60;
+	ELSE
+		RETURN retribuzione * 8 + (retribuzione * 1.3 *((minutiLavorati/60) - 8)); -- maggiorazione del 30% per gli straordinari
+	END IF;
+    
+END $$
+DELIMITER ;
+
+-- =============================================================================================================== --
 -- 													OPERATION 1        		  									   --
 -- Dato in ingresso il nome di un materiale, la quantità utilizzata e l'id del lavoro a cui fa riferimento si      --
 -- inserisce il nuovo record in MaterialeUtilizzato. In caso il materiale non sia presente lo crea (è stata creata --	
@@ -127,8 +148,8 @@ BEGIN
     );
     
     INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
-    WITH oreLavorateProgetto AS ( -- 
-		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`)) AS minutiLavorati, T.`giorno`
+    WITH oreLavorateProgetto AS (  
+		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati, T.`giorno`
 		FROM `ProgettoEdilizio` PE
 		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
@@ -139,15 +160,14 @@ BEGIN
 		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+		WHERE L.`CF` = _cfOperaio
 		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
 	)
-    SELECT OLP.`operaio`, OLP.`progetto`,  
-		SUM(IF(OLP.minutiLavorati/60) <= 8, L.`retribuzione_oraria`*OLP.minutiLavorati/60, 
-			-- else
-			L.`retribuzione_oraria`*8+(L.`retribuzione_oraria`*1.3*((OLP.minutiLavorati/60) - 8)))) AS costo -- maggiorazione del 30% per gli straordinari
+    SELECT OLP.`operaio`, OLP.`progetto`, SUM(calcoloCostoManodopera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS Costo
     FROM oreLavorateProgetto OLP
     JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
-	GROUP BY OLP.`operaio`, OLP.`progetto`, OLP.`giorno`;
+	GROUP BY OLP.`operaio`, OLP.`progetto`, OLP.`giorno`; -- OLP.`operaio` potremmo anche toglierla perchè tanto mettendo il where siamo sicuri che sia un operaio solo
+														 -- e non mi torna tanto il group by sul giorno perchè ora devi calcolare il costo totale del progetto quindi che senso ha mettere il giorno? 
 END $$
 DELIMITER ;
 
@@ -175,7 +195,7 @@ BEGIN
 	END IF;
 
 	-- Se uno dei dati inseriti del turno è nullo esce
-	IF _mansione IS NULL OR _giorno IS NULL OR _inizio IS NULL OR _fine IS NULL
+	IF _mansione IS NULL OR _giorno IS NULL OR _inizio IS NULL OR _fine IS NULL OR _inizio > _fine
 	THEN
 		SIGNAL SQLSTATE '45000' 
 		SET MESSAGE_TEXT = '[ERROR] Dati inseriti non validi';
@@ -224,23 +244,94 @@ BEGIN
 END $$
 DELIMITER ;
 
--- ================================================================================ --
---                                   OPERATION 4                                    --
--- ================================================================================ --
+-- =============================================================================================================== --
+-- 													OPERATION 4       		  									   --
+-- =============================================================================================================== --
+DROP TRIGGER IF EXISTS controlloTimestamp;
+DELIMITER $$
+CREATE TRIGGER controlloTimestamp BEFORE INSERT ON `Misurazione`
+FOR EACH ROW
+BEGIN
+    # MAIN
+	IF NEW.`timestamp` > CURRENT_TIMESTAMP()
+    THEN
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] Misurazione inserita ancora non esistente';
+    END IF;
 
--- ================================================================================ --
---                                   OPERATION 5                                    --
--- ================================================================================ --
+END $$
+DELIMITER ;
 
--- ================================================================================ --
---                                   OPERATION 6                                    --
--- ================================================================================ --
+-- =============================================================================================================== --
+-- 													OPERATION 5        		  									   --
+-- Evento che aggiorna ogni settimana la ridondanza del costo del progetto										   --
+-- =============================================================================================================== --
+DROP EVENT IF EXISTS aggiornamentoCosto;
+DELIMITER $$
+CREATE EVENT aggiornamentoCosto
+ON SCHEDULE EVERY 1 WEEK DO
+BEGIN
+	# UTILS
+	DROP TABLE IF EXISTS costoProgetto; 
+    CREATE TABLE costoProgetto (
+        progetto INT NOT NULL,
+        costo DOUBLE,
+        PRIMARY KEY(progetto)
+    );
 
--- ================================================================================ --
---                                   OPERATION 7                                    --
--- ================================================================================ --
+	# MAIN
+    -- calcolo del costo delle manodopera totale per ogni progetto
+    INSERT INTO costoProgetto (progetto, costo) 
+	WITH oreLavorateProgetto AS (
+		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati, T.`giorno`
+		FROM `ProgettoEdilizio` PE
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+		JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
+		JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
+		JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
+		JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
+		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
+		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
+					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
+	)
+    , costoManodopera AS (
+		SELECT OLP.`progetto`, SUM(calcoloCostoManodopera(OLP.minutiLavorati,L.`retribuzione_oraria`)) AS costoManodopera
+		FROM oreLavorateProgetto OLP
+		JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
+		GROUP BY OLP.`progetto`
+    ) -- calcolo del costo totale dei materiali per ogni progetto
+    , costoMateriali AS (
+		SELECT PE.`codice` AS progetto, SUM(M.`costo` * MU.`quantita`) as costoMateriali
+		FROM `ProgettoEdilizio` PE
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+        JOIN `MaterialeUtilizzato` MU ON MU.`lavoro` = LPE.`ID`
+        JOIN `Materiale` M ON M.`ID` = MU.`materiale`
+        GROUP BY PE.`progetto`
+    )
+    SELECT CM.`progetto`, CM.costoManodopera + CMA.costoMateriali
+    FROM costoManodopera CM
+    JOIN costoMateriali CMA ON CMA.progetto = CM.progetto;
+    
+    -- aggiornamento della tabella
+	UPDATE `ProgettoEdilizio` PE
+		JOIN costoProgetto CP ON CP.progetto = PE.`codice`
+	SET PE.`costo` = CP.costo;
+    
+END $$
+DELIMITER :
 
--- ================================================================================ --
---                                   OPERATION 8                                    --
--- ================================================================================ --
+-- =============================================================================================================== --
+-- 													OPERATION 6        		  									   --
+-- =============================================================================================================== --
+
+-- =============================================================================================================== --
+-- 													OPERATION 7        		  									   --
+-- =============================================================================================================== --
+
+-- =============================================================================================================== --
+-- 													OPERATION 8        		  									   --
+-- =============================================================================================================== --
 

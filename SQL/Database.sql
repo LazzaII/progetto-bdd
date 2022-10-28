@@ -48,8 +48,6 @@ CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
   `lunghezza` DOUBLE UNSIGNED NOT NULL,
-  `larghezza` DOUBLE UNSIGNED NOT NULL,
-  `altezza` DOUBLE UNSIGNED NOT NULL,
   `piano` SMALLINT NOT NULL, -- FK a piano
   `edificio` INT NOT NULL, -- FK a edificio
   `parquet` INT, -- FK a parquet
@@ -529,8 +527,8 @@ CREATE UNIQUE INDEX `index_parete3` ON `Sensore` (`parete`);
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NULL,
-	`timestamp` TIMESTAMP NOT NULL, 
-	`isAlert` TINYINT NOT NULL CHECK(`isAlert` IN (0, 1)),
+	`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
+	`isAlert` TINYINT NOT NULL CHECK(`isAlert` IN (0, 1)), -- isAlert potremmo metterlo su 5 valori per farlo più veritiero [Guardare documentazione] 
 	`unita_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
