@@ -256,7 +256,7 @@ BEGIN
 	IF NEW.`timestamp` > CURRENT_TIMESTAMP()
     THEN
 		SIGNAL SQLSTATE '45000' 
-		SET MESSAGE_TEXT = '[ERROR] Misurazione inserita ancora non esistente';
+		SET MESSAGE_TEXT = '[ERROR] Impossibile aggiungere la misurazione';
     END IF;
 
 END $$
