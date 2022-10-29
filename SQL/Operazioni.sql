@@ -1,10 +1,10 @@
 USE SmartBuildings;
 
 -- =============================================================================================================== --
--- 													FUNZIONI DI UTILITÀ       		  							   --
--- =============================================================================================================== --
+-- 												FUNZIONI DI UTILITÀ       		  							       --
 -- Funzione per il calcolo del costo giornaliero della manodopera, tiene conto della maggiorazione per gli         --
--- straordinari 																								   --
+-- straordinari 	
+-- =============================================================================================================== --																							   --
 DROP FUNCTION IF EXISTS costoManodoperaGiornaliera;
 DELIMITER $$
 CREATE FUNCTION costoManodoperaGiornaliera (minutiLavorati INT, retribuzione DOUBLE)
@@ -20,6 +20,9 @@ BEGIN
     
 END $$
 DELIMITER ;
+-- =============================================================================================================== --
+-- 											  FINE FUNZIONI UTILITÀ        		  								   --
+-- =============================================================================================================== --
 
 -- =============================================================================================================== --
 -- 													OPERATION 1        		  									   --
@@ -123,7 +126,7 @@ DELIMITER ;
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
 -- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
--- suddiviso per ogni progetto, rende una temporary table. Tiene conto della maggiorzione del 30% in caso di ore   --
+-- suddiviso per ogni progetto, restituisce un result set. Tiene conto della maggiorzione del 30% in caso di ore   --
 -- di straordinario.                                                                                               --
 -- =============================================================================================================== --
 
@@ -138,18 +141,9 @@ BEGIN
 		SIGNAL SQLSTATE '45000' 
 		SET MESSAGE_TEXT = '[ERROR] Lavoratore non presente';
 	END IF;
-		
-    DROP TABLE IF EXISTS costoManodoperaProgetto; 
-    CREATE TABLE costoManodoperaProgetto (
-		operaio VARCHAR(16) NOT NULL, 
-        progetto INT NOT NULL,
-        costo DOUBLE,
-        PRIMARY KEY(operaio, progetto)
-    );
-    
-    INSERT INTO costoManodoperaProgetto(operaio, progetto, costo) 
+
     WITH oreLavorateProgetto AS (  
-		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati, T.`giorno`
+		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati
 		FROM `ProgettoEdilizio` PE
 		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
@@ -161,13 +155,12 @@ BEGIN
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
 		WHERE L.`CF` = _cfOperaio
-		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
+		GROUP BY PE.`codice`, T.`giorno`
 	)
-    SELECT OLP.`operaio`, OLP.`progetto`, SUM(calcoloCostoManodopera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS Costo
+    SELECT OLP.operaio, OLP.progetto, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS Costo
     FROM oreLavorateProgetto OLP
-    JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
-	GROUP BY OLP.`operaio`, OLP.`progetto`, OLP.`giorno`; -- OLP.`operaio` potremmo anche toglierla perchè tanto mettendo il where siamo sicuri che sia un operaio solo
-														 -- e non mi torna tanto il group by sul giorno perchè ora devi calcolare il costo totale del progetto quindi che senso ha mettere il giorno? 
+    JOIN Lavoratore L ON L.`CF` = OLP.operaio
+	GROUP BY OLP.progetto; 
 END $$
 DELIMITER ;
 
@@ -246,26 +239,26 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 4       		  									   --
+-- Evento che ogni anno elimina le misurazioni che non incidono con la valutazione dello stato dell'edificio       --       
 -- =============================================================================================================== --
-DROP TRIGGER IF EXISTS controlloTimestamp;
-DELIMITER $$
-CREATE TRIGGER controlloTimestamp BEFORE INSERT ON `Misurazione`
-FOR EACH ROW
-BEGIN
-    # MAIN
-	IF NEW.`timestamp` > CURRENT_TIMESTAMP()
-    THEN
-		SIGNAL SQLSTATE '45000' 
-		SET MESSAGE_TEXT = '[ERROR] Impossibile aggiungere la misurazione';
-    END IF;
 
+DROP EVENT IF EXISTS puliziaMisurazioni;
+DELIMITER $$
+CREATE EVENT puliziaMisurazioni
+ON SCHEDULE EVERY 1 YEAR DO
+BEGIN
+	DELETE M FROM `misurazione` M 
+	WHERE M.`timestamp` < CURRENT_TIMESTAMP - INTERVAL 1 YEAR 
+		AND
+		M.`livello` = 'L0';
 END $$
-DELIMITER ;
+DELIMITER ; 
 
 -- =============================================================================================================== --
 -- 													OPERATION 5        		  									   --
 -- Evento che aggiorna ogni settimana la ridondanza del costo del progetto										   --
 -- =============================================================================================================== --
+
 DROP EVENT IF EXISTS aggiornamentoCosto;
 DELIMITER $$
 CREATE EVENT aggiornamentoCosto
@@ -273,7 +266,7 @@ ON SCHEDULE EVERY 1 WEEK DO
 BEGIN
 	# UTILS
 	DROP TABLE IF EXISTS costoProgetto; 
-    CREATE TABLE costoProgetto (
+    CREATE TEMPORARY TABLE costoProgetto (
         progetto INT NOT NULL,
         costo DOUBLE,
         PRIMARY KEY(progetto)
@@ -283,7 +276,7 @@ BEGIN
     -- calcolo del costo delle manodopera totale per ogni progetto
     INSERT INTO costoProgetto (progetto, costo) 
 	WITH oreLavorateProgetto AS (
-		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati, T.`giorno`
+		SELECT L.`CF` AS operaio, PE.`codice` AS progetto, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati
 		FROM `ProgettoEdilizio` PE
 		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
@@ -294,13 +287,13 @@ BEGIN
 		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-		GROUP BY L.`CF`, PE.`codice`, T.`giorno`
+		GROUP BY L.`CF`, PE.`codice`
 	)
     , costoManodopera AS (
-		SELECT OLP.`progetto`, SUM(calcoloCostoManodopera(OLP.minutiLavorati,L.`retribuzione_oraria`)) AS costoManodopera
+		SELECT OLP.progetto, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS costoManodopera
 		FROM oreLavorateProgetto OLP
-		JOIN Lavoratore L ON L.`CF` = OLP.`operaio`
-		GROUP BY OLP.`progetto`
+		JOIN Lavoratore L ON L.`CF` = OLP.operaio
+		GROUP BY OLP.progetto
     ) -- calcolo del costo totale dei materiali per ogni progetto
     , costoMateriali AS (
 		SELECT PE.`codice` AS progetto, SUM(M.`costo` * MU.`quantita`) as costoMateriali
@@ -311,7 +304,7 @@ BEGIN
         JOIN `Materiale` M ON M.`ID` = MU.`materiale`
         GROUP BY PE.`progetto`
     )
-    SELECT CM.`progetto`, CM.costoManodopera + CMA.costoMateriali
+    SELECT CM.progetto, CM.costoManodopera + CMA.costoMateriali
     FROM costoManodopera CM
     JOIN costoMateriali CMA ON CMA.progetto = CM.progetto;
     
@@ -325,7 +318,36 @@ DELIMITER :
 
 -- =============================================================================================================== --
 -- 													OPERATION 6        		  									   --
+-- Procedura che dato in ingresso un balcone calcola l'atezza da terrra del balcone preso in ingresso			   --
 -- =============================================================================================================== --
+
+DROP PROCEDURE IF EXISTS altezzaBalcone();
+DELIMITER $$
+CREATE PROCEDURE altezzaBalcone(IN _idBalcone INT, OUT altezzaDaTerra INT)
+BEGIN
+	# VAR
+	DECLARE idEdificio INT DEFAULT NULL;
+	DECLARE numeroPiano INT DEFAULT NULL;
+
+	# MAIN
+	-- se non esiste il balcone da errore
+	IF NOT EXISTS (SELECT 1 FROM `Balcone` B WHERE B.`ID` = _idBalcone)
+	THEN
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] il balcone inserito è non presente';
+	END IF;
+
+	-- se il balcone esiste si trova l'id dell'edificio e il piano di cui fa parte
+	SELECT V.`edificio`, V.`piano` INTO idEdificio, numeroPiano
+	FROM `Balcone` B	
+	JOIN `BalconeVano` BV ON BV.`balcone` = B.`ID`
+	JOIN `Vano` V ON V.`ID` = BV.`vano` -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
+
+	SELECT SUM() INTO altezzaDaTerra
+	FROM `Piano` P
+	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio
+END $$
+DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
@@ -333,5 +355,60 @@ DELIMITER :
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
+-- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione e la rende in output   --
+-- insieme al costo																								   --
 -- =============================================================================================================== --
 
+DROP PROCEDURE IF EXISTS costoRistrutturazioneArea;
+DELIMITER $$
+CREATE PROCEDURE costoRistrutturazioneArea ()
+BEGIN
+	# MAIN 
+	WITH oreLavorateProgetto AS (
+		SELECT L.`CF` AS operaio, AG.`ID` AS AreaGeografica, SUM(TIMESTAMPDIFF(MINUTE, CONCAT('0000-01-01 ', T.`ora_fine`), CONCAT('0000-01-01 ', T.`ora_inizio`))) AS minutiLavorati
+		FROM `ProgettoEdilizio` PE
+		JOIN `Edificio` E ON E.`ID` = PE.`codice`
+		JOIN `AreaGeografica` AG ON AG.`ID` = E.`area_geografica`
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+		JOIN `PartecipazioneLavoratoreLavoro` PLL ON PLL.`lavoro` = LPE.`ID`
+		JOIN `SupervisioneLavoro` SL ON SL.`lavoro` = LPE.`ID`
+		JOIN `Lavoratore` L ON L.`CF` = PLL.`lavoratore` OR L.`CF` = SL.`lavoratore`
+		JOIN `LavoratoreDirigeTurno` LDT ON LDT.`capo_turno` = L.`CF`
+		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
+		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
+					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
+		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+		GROUP BY L.`CF`, AG.`ID`
+	)
+    , costoManodopera AS (
+		SELECT OLP.AreaGeografica, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS costoManodopera
+		FROM oreLavorateProgetto OLP
+		JOIN Lavoratore L ON L.`CF` = OLP.AreaGeografica
+		GROUP BY OLP.AreaGeografica,
+    ) -- calcolo del costo totale dei materiali per ogni progetto
+    , costoMateriali AS (
+		SELECT AG.`ID` AS AreaGeografica, SUM(M.`costo` * MU.`quantita`) as costoMateriali
+		FROM `ProgettoEdilizio` PE
+		JOIN `Edificio` E ON E.`ID` = PE.`codice`
+		JOIN `AreaGeografica` AG ON AG.`ID` = E.`area_geografica`
+		JOIN `StadioDiAvanzamento` SDA ON SDA.`progetto_edilizio` = PE.`codice`
+		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
+        JOIN `MaterialeUtilizzato` MU ON MU.`lavoro` = LPE.`ID`
+        JOIN `Materiale` M ON M.`ID` = MU.`materiale`
+		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+        GROUP BY AG.`ID`
+    )
+	, costoArea AS (
+    	SELECT CMA.AreaGeografica, CM.costoManodopera + CMA.costoMateriali AS costo
+    	FROM costoManodopera CM
+    	JOIN costoMateriali CMA ON CMA.AreaGeografica = CM.AreaGeografica
+	)
+	SELECT CA.AreaGeografica, CA.costo
+	FROM costoArea CA
+	WHERE CA.costo WHERE = (SELECT MAX(CA2.costo) FROM costArea CA2);
+END $$
+DELIMITER ;
+-- =============================================================================================================== --
+-- 												 FINE OPERAZIONI        		  								   --
+-- =============================================================================================================== --

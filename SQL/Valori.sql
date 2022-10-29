@@ -170,23 +170,85 @@ INSERT INTO `Intonaco` VALUES (@id, 0.3, 'per tappezzeria');
 CALL valorizzazioneMateriale ('Legno massello', 15001, 'WoodMasters', 7, 42, 1, 'resistente', 30, 'mq', CURRENT_DATE(), 90, 'marrone');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Parquet'; 
+WHERE M.`nome` = 'Legno massello'; 
 INSERT INTO `Parquet` VALUES (@id, 'spina di pesce');
 
 CALL valorizzazioneMateriale ('Legno di quercia', 15002, 'WoodMasters', 6.5, 40, 1, 'resistente', 42, 'mq', CURRENT_DATE(), 90, 'marrone');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Parquet'; 
+WHERE M.`nome` = 'Legno di quercia'; 
 INSERT INTO `Parquet` VALUES (@id, 'parallela');
 
 CALL valorizzazioneMateriale ('Legno di noce', 15003, 'WoodMasters', 6.5, 45, 1, 'resistente', 38, 'mq', CURRENT_DATE(), 110, 'marrone');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Parquet'; 
+WHERE M.`nome` = 'Legno di noce'; 
 INSERT INTO `Parquet` VALUES (@id, 'parallela sfalsata');
 
 CALL valorizzazioneMateriale ('Legno di rovere', 15004, 'WoodMasters', 7, 39, 1, 'resistente', 36, 'mq', CURRENT_DATE(), 64, 'marrone');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Parquet'; 
+WHERE M.`nome` = 'Legno di rovere'; 
 INSERT INTO `Parquet` VALUES (@id, 'ungherese chiusa');
+
+-- Inserimento piastrelle
+CALL valorizzazioneMateriale ('Piastrelle zephyr', 15015, 'NovoCeram', 30, 30, 6, 'fragile', 9, 'mq', CURRENT_DATE(), 118, 'oro');
+SELECT M.`ID` INTO @id
+FROM Materiale M
+WHERE M.`nome` = 'Piastrelle zephyr'; 
+INSERT INTO `Piastrella` VALUES (@id, 0.5, 'Colori misti', 0);
+
+CALL valorizzazioneMateriale ('Piastrelle osmose', 15016, 'NovoCeram', 30, 60, 8, 'fragile', 12, 'mq', CURRENT_DATE(), 100, 'grigio-oro-bianco');
+SELECT M.`ID` INTO @id
+FROM Materiale M
+WHERE M.`nome` = 'Piastrelle osmose'; 
+INSERT INTO `Piastrella` VALUES (@id, 0.4, 'Esagoni con colori misti', 1);
+
+CALL valorizzazioneMateriale ('Piastrelle bloom', 15017, 'NovoCeram', 30, 60, 4, 'fragile', 11, 'mq', CURRENT_DATE(), 97, 'rosso-verde-blu-giallo');
+SELECT M.`ID` INTO @id
+FROM Materiale M
+WHERE M.`nome` = 'Piastrelle bloom'; 
+INSERT INTO `Piastrella` VALUES (@id, 0.4, 'Motivo floreale con colori misti', 1);
+
+CALL valorizzazioneMateriale ('Piastrelle performance', 15018, 'NovoCeram', 30, 30, 6, 'fragile', 8, 'mq', CURRENT_DATE(), 81, 'beige');
+SELECT M.`ID` INTO @id
+FROM Materiale M
+WHERE M.`nome` = 'Piastrelle performance'; 
+INSERT INTO `Piastrella` VALUES (@id, 0.5, 'Colore unico', 0);
+
+-- Inserimento lavoratori
+INSERT INTO `Lavoratore` (`CF`, `nome`, `cognome`, `retribuzione_oraria`, `tipo`) VALUES 
+('MRORSI97M09D612B', 'Mario', 'Rossi', 8.7, 'semplice'),
+('VRILII99D612I', 'Luigi', 'Verdi', 8.4, 'semplice'),
+('FACGAL85P600D', 'Franco', 'Gialli', 10.9, 'responsabile'),
+('VOATRH89S612P', 'Viola', 'Turchesi', 12.4, 'capo cantiere'),
+('MRANRI92L611P', 'Marta', 'Neri', 11.9, 'capo cantiere'),
+('AABACI99Z475A', 'Ada', 'Bianchi', 8.2, 'semplice'),
+('AVRRSI82P098M', 'Alvaro', 'Rosi', 9.0, 'semplice'),
+('UGOAAN94K032L', 'Ugo', 'Arancioni', 8.7, 'semplice'),
+('RMOMRO643S102H', 'Romano', 'Marroni', 8.1, 'semplice'),
+('UBRBLU456D612D', 'Umberto', 'Blu', 11.6, 'responsabile');
+
+-- Inserimento rischi
+INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES 
+(1, `Terremoto`, 8),
+(1, 'Frana', 10),
+(5, 'Tromba aria', 9),
+(5, 'Incendio', 2),
+(2, 'Frana', 8),
+(3, 'Incendio', 9),
+(4, 'Alluvione', 6);
+
+-- Inserimento edifici
+INSERT INTO `Edificio` (`isFinito`, `tipologia`, `stato`, `area_geografica`) VALUES 
+(1, 'Palazzo', 100, 1),
+(0, 'Villetta a schiera', 75, 5);
+
+-- Inserimento piani 
+INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edificio`) VALUES 
+(1, 360, NULL, NULL, 1),
+(2, 360, NULL, NULL, 1),
+(3, 380, 60, 320),
+(1, 380, NULL, NULL, 2),
+(2, 380, NULL, NULL, 2),
+(3, 410, 70, 360);

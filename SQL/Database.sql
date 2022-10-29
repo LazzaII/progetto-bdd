@@ -331,7 +331,6 @@ CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
 
 CREATE TABLE IF NOT EXISTS `Piastrella`(
   `ID` INT NOT NULL, -- FK a materiale
-  `forma` VARCHAR(30) NOT NULL,
   `larghezza_fuga` DOUBLE UNSIGNED NOT NULL,
   `motivo`VARCHAR(45) NOT NULL,
   `isStampato` TINYINT DEFAULT 0 CHECK (`isStampato` IN (0,1)), -- 0 non stampato 1 stampato
@@ -515,6 +514,7 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`distanza_da_sx` DOUBLE UNSIGNED NOT NULL, 
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
+    `tipo` VARCHAR(45) NOT NULL, 
 	`soglia` DOUBLE NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
 	PRIMARY KEY (`ID`),
@@ -528,7 +528,7 @@ CREATE UNIQUE INDEX `index_parete3` ON `Sensore` (`parete`);
 CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
-	`isAlert` TINYINT NOT NULL CHECK(`isAlert` IN (0, 1)), -- isAlert potremmo metterlo su 5 valori per farlo più veritiero [Guardare documentazione] 
+	`livello` VARCHAR(2) NOT NULL CHECK(`livello` IN ('L0', 'L1', 'L2', 'L3', 'L4')), -- L0 misurazione che non impatta sullo stato dell'edificio
 	`unita_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,

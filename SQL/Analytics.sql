@@ -25,8 +25,7 @@ STIMA DEI DANNI
 Questa funzionalità si occupa di effettuare la predizione di danni a seguito di eventi
 sismici, a partire da un’ipotetica sollecitazione e dallo stato dell’edificio.
 
-Gli studenti devono studiare e implementare una funzionalità che stimi i poten-
-ziali danni alle parti di un edificio, sfruttando i dati misurati dai sensori e i danni
-
-arrecati all’edificio provocati da precedenti sollecitazioni sismiche reali.
+Gli studenti devono studiare e implementare una funzionalità che stimi i potenziali
+danni alle parti di un edificio, sfruttando i dati misurati dai sensori e i danni arrecati
+all’edificio provocati da precedenti sollecitazioni sismiche reali.
 */
