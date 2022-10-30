@@ -248,7 +248,141 @@ INSERT INTO `Edificio` (`isFinito`, `tipologia`, `stato`, `area_geografica`) VAL
 INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edificio`) VALUES 
 (1, 360, NULL, NULL, 1),
 (2, 360, NULL, NULL, 1),
-(3, 380, 60, 320),
+(3, 380, 60, 320, 1),
 (1, 380, NULL, NULL, 2),
 (2, 380, NULL, NULL, 2),
-(3, 410, 70, 360);
+(3, 410, 70, 360, 2);
+
+-- Inserimento vani
+INSERT INTO `Vano` (`edificio`, `piano`, `lunghezza`, `larghezza`, `funzione`, `parquet`, `piastrella`) VALUES 
+(1, 1, 400, 300, 'Cucina', NULL, 4),
+(1, 1, 290, 350, 'Sala da pranzo', NULL, 4),
+(1, 1, 430, 200, 'Soggiorno', NULL, 2),
+(1, 1, 390, 400, 'Camera da letto', NULL, 1),
+(1, 1, 400, 360, 'Camera da letto', 3, NULL),
+(1, 2, 350, 400, 'Cucina', NULL, 4),
+(1, 2, 450, 350, 'Sala da pranzo', 2, NULL),
+(1, 2, 360, 380, 'Soggiorno', 2, NULL),
+(1, 2, 420, 410, 'Camera da letto', NULL, 1),
+(1, 2, 320, 380, 'Soggiorno', 3, NULL),
+(1, 3, 400, 360, 'Cucina', NULL, 4),
+(1, 3, 330, 400, 'Sala da pranzo', 2, NULL),
+(1, 3, 390, 390, 'Soggiorno', 3, NULL),
+(1, 3, 420, 400, 'Camera da letto', NULL, 1),
+(1, 3, 315, 310, 'Camera da letto', 3, NULL),
+(2, 1, 350, 280, 'Cucina', NULL, 2),
+(2, 1, 400, 330, 'Sala da pranzo', NULL, 2),
+(2, 1, 400, 220, 'Cucina', NULL, 3),
+(2, 1, 410, 410, 'Camera da letto', NULL, 1),
+(2, 1, 400, 360, 'Camera da letto', 4, NULL),
+(2, 2, 350, 400, 'Cucina', NULL, 4),
+(2, 2, 380, 350, 'Sala da pranzo', 3, NULL),
+(2, 2, 360, 380, 'Soggiorno', 1, NULL),
+(2, 2, 360, 340, 'Camera da letto', NULL, 1),
+(2, 2, 300, 270, 'Soggiorno', 2, NULL),
+(2, 3, 370, 320, 'Cucina', NULL, 1),
+(2, 3, 330, 400, 'Sala da pranzo', 4, NULL),
+(2, 3, 390, 390, 'Camera da letto', 3, NULL),
+(2, 3, 405, 410, 'Camera da letto', NULL, 2),
+(2, 3, 315, 310, 'Soggiorno', 2, NULL);
+
+-- Inserimento pareti
+INSERT INTO `Parete` (`orientamento`, `angolo`, `id_parete_vano`, `mattone`, `vano`, `pietra`, `lunghezza`) VALUES 
+('N', '90', 1, 2, 1, NULL, 300),
+('E', '90', 2, 2, 1, NULL, 220),
+('S', '90', 3, 2, 1, NULL, 300),
+('W', '90', 4, 2, 1, NULL, 220),
+(NULL, NULL, 5, 5, 1, 1, NULL),
+
+('N', '90', 1, 3, 2, NULL, 280),
+('E', '90', 2, 3, 2, NULL, 260),
+('S', '90', 3, 3, 2, NULL, 280),
+('W', '90', 4, 3, 2, NULL, 260),
+(NULL, NULL, 5, 5, 2, NULL, NULL),
+
+('N', '90', 1, 2, 3, NULL, 310),
+('E', '90', 2, 2, 3, NULL, 320),
+('S', '90', 3, 2, 3, NULL, 310),
+('W', '90', 4, 2, 3, NULL, 320),
+(NULL, NULL, 5, 2, 3, 1, NULL),
+
+('N', '90', 1, 2, 4, NULL, 400),
+('E', '90', 2, 2, 4, 2, 270),
+('S', '90', 3, 2, 4, NULL, 400),
+('W', '90', 4, 2, 4, NULL, 270),
+(NULL, NULL, 5, 2, 4, 3, NULL),
+
+('N', '90', 1, 2, 5, NULL, 220),
+('E', '90', 2, 2, 5, 1, 230),
+('S', '90', 3, 2, 5, NULL, 220),
+('W', '90', 4, 2, 5, NULL, 230),
+(NULL, NULL, 5, 2, 5, NULL, NULL),
+
+('N', '90', 1, 2, 6, NULL, 2800),
+('E', '90', 2, 2, 6, NULL, 220),
+('S', '90', 3, 2, 6, NULL, 280),
+('W', '90', 4, 2, 6, 3, 220),
+(NULL, NULL, 5, 2, 6, 1, NULL),
+
+('N', '90', 1, 2, 7, NULL, 340),
+('E', '90', 2, 2, 7, 2, 200),
+('S', '90', 3, 2, 7, NULL, 340),
+('W', '90', 4, 2, 7, NULL, 200),
+(NULL, NULL, 5, 2, 7, NULL, NULL),
+
+('N', '90', 1, 2, 8, NULL, 180),
+('E', '90', 2, 2, 8, NULL, 220),
+('S', '90', 3, 2, 8, NULL, 180),
+('W', '90', 4, 2, 8, NULL, 220),
+(NULL, NULL, 5, 2, 8, NULL, NULL),
+
+('N', '90', 1, 2, 9, NULL, 280),
+('E', '90', 2, 2, 9, NULL, 280),
+('S', '90', 3, 2, 9, 3, 280),
+('W', '90', 4, 2, 9, NULL, 280),
+(NULL, NULL, 5, 2, 9, NULL, NULL),
+
+('N', '90', 1, 2, 10, 1, 330),
+('E', '90', 2, 2, 10, NULL, 250),
+('S', '90', 3, 2, 10, NULL, 330),
+('W', '90', 4, 2, 10, NULL, 250),
+(NULL, NULL, 5, 2, 10, NULL, NULL),
+
+('N', '90', 1, 2, 11, NULL, 310),
+('E', '90', 2, 2, 11, NULL, 310),
+('S', '90', 3, 2, 11, 2, 310),
+('W', '90', 4, 2, 11, NULL, 310),
+(NULL, NULL, 5, 2, 11, NULL, NULL),
+
+('N', '90', 1, 2, 12, NULL, 290),
+('E', '90', 2, 2, 12, NULL, 310),
+('S', '90', 3, 2, 12, NULL, 290),
+('W', '90', 4, 2, 12, NULL, 310),
+(NULL, NULL, 5, 2, 12, NULL, NULL),
+
+('N', '90', 1, 2, 13, NULL, 300),
+('E', '90', 2, 2, 13, NULL, 300),
+('S', '90', 3, 2, 13, NULL, 300),
+('W', '90', 4, 2, 13, NULL, 300),
+(NULL, NULL, 5, 2, 13, NULL, NULL),
+
+('N', '90', 1, 2, 14, NULL, 190),
+('E', '90', 2, 2, 14, NULL, 200),
+('S', '90', 3, 2, 14, NULL, 190),
+('W', '90', 4, 2, 14, NULL, 200),
+(NULL, NULL, 5, 2, 14, NULL, NULL),
+
+('N', '90', 1, 2, 15, NULL, 180),
+('E', '90', 2, 2, 15, NULL, 200),
+('S', '90', 3, 2, 15, NULL, 180),
+('W', '90', 4, 2, 15, NULL, 200),
+(NULL, NULL, 5, 2, 15, NULL, NULL);
+
+-- Inserimenti balcone-vano
+INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES 
+(1, 2),
+(2, 5),
+(3, 8),
+(3, 9),
+(12, 11),
+(16, 15);
