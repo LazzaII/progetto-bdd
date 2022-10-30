@@ -341,16 +341,19 @@ BEGIN
 	SELECT V.`edificio`, V.`piano` INTO idEdificio, numeroPiano
 	FROM `Balcone` B	
 	JOIN `BalconeVano` BV ON BV.`balcone` = B.`ID`
-	JOIN `Vano` V ON V.`ID` = BV.`vano` -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
+	JOIN `Vano` V ON V.`ID` = BV.`vano`; -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
 
-	SELECT SUM() INTO altezzaDaTerra
+	SELECT SUM(P.`altezza`) INTO altezzaDaTerra
 	FROM `Piano` P
-	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio
+	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio;
 END $$
 DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
+-- Procedura che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute --
+-- in un certo lasso di tempo per aggiornare lo stato dell'edificio, oltre ad aggiornare il valore numero dello    -- 
+-- stato rende in output un valore testuale per indicarne lo stato. [Ottime condizioni, Buone, Critiche etc].      --
 -- =============================================================================================================== --
 
 -- =============================================================================================================== --
@@ -385,7 +388,7 @@ BEGIN
 		SELECT OLP.AreaGeografica, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS costoManodopera
 		FROM oreLavorateProgetto OLP
 		JOIN Lavoratore L ON L.`CF` = OLP.AreaGeografica
-		GROUP BY OLP.AreaGeografica,
+		GROUP BY OLP.AreaGeografica
     ) -- calcolo del costo totale dei materiali per ogni progetto
     , costoMateriali AS (
 		SELECT AG.`ID` AS AreaGeografica, SUM(M.`costo` * MU.`quantita`) as costoMateriali
@@ -406,7 +409,7 @@ BEGIN
 	)
 	SELECT CA.AreaGeografica, CA.costo
 	FROM costoArea CA
-	WHERE CA.costo WHERE = (SELECT MAX(CA2.costo) FROM costArea CA2);
+	WHERE CA.costo = (SELECT MAX(CA2.costo) FROM costArea CA2);
 END $$
 DELIMITER ;
 -- =============================================================================================================== --
