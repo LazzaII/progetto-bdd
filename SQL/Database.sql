@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `Vano` (
   `ID` INT NOT NULL AUTO_INCREMENT,
   `funzione` VARCHAR(45) NOT NULL,
   `lunghezza` DOUBLE UNSIGNED NOT NULL,
+  `larghezza` DOUBLE UNSIGNED NOT NULL,
   `piano` SMALLINT NOT NULL, -- FK a piano
   `edificio` INT NOT NULL, -- FK a edificio
   `parquet` INT, -- FK a parquet
@@ -190,14 +191,15 @@ CREATE UNIQUE INDEX `index_calamita` ON `AreaColpita` (`calamita`);
 
 CREATE TABLE IF NOT EXISTS `Parete` (
   `ID` INT NOT NULL AUTO_INCREMENT,
-  `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
-  `angolo` INT NOT NULL CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
+  `orientamento` VARCHAR(2) CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
+  `angolo` INT CHECK (`angolo` BETWEEN 1 AND 359 AND `angolo` <> 180), -- l'angolo in questione è quello tra la parete del
 										-- record e quella con l'id successivo, nel caso dell'ultima parete sarà tra l'ultima e la prima
   `id_parete_vano` INT NOT NULL, -- serve per identificare a quale parete si fa riferimento all'interno del vano.
-				 -- 1 è pavimento, il max è il soffitto, gli altri sono in ordine crescente a partire dalla parete a nord e continuando verso est
+				 -- il max è il soffitto, gli altri sono in ordine crescente a partire dalla parete a nord e continuando verso est
   `mattone` INT NOT NULL, -- FK al tipo di mattone
   `vano` INT NOT NULL, -- FK al vano
-  `pietra` INT DEFAULT NULL, -- FK a pietra (non tutte sono per forza rivestite in pietra)
+  `pietra` INT DEFAULT NULL, -- FK a pietra (non tutti sono per forza rivestite in pietra)
+  `lungheza` DOUBLE UNSIGNED,
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`)
 		ON UPDATE CASCADE

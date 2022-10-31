@@ -126,8 +126,8 @@ DELIMITER ;
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
 -- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
--- suddiviso per ogni progetto, restituisce un result set. Tiene conto della maggiorzione del 30% in caso di ore   --
--- di straordinario.                                                                                               --
+-- suddiviso per ogni progetto e il costo totale, restituisce un result set. Tiene conto della maggiorzione del    --
+-- 30% in caso di ore di straordinario.                                                                            --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS calcoloCostoManodopera;
@@ -160,7 +160,7 @@ BEGIN
     SELECT OLP.operaio, OLP.progetto, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS Costo
     FROM oreLavorateProgetto OLP
     JOIN Lavoratore L ON L.`CF` = OLP.operaio
-	GROUP BY OLP.progetto; 
+	GROUP BY OLP.progetto WITH ROLLUP; 
 END $$
 DELIMITER ;
 
@@ -258,6 +258,7 @@ DELIMITER ;
 -- 													OPERATION 5        		  									   --
 -- Evento che aggiorna ogni settimana la ridondanza del costo del progetto										   --
 -- =============================================================================================================== --
+-- MANCA DA CONTROLLARE CHE SIANO SOLO QUELLI DELL'ULTIMA SETTIMANA, per come è ora conta da zero sempre
 
 DROP EVENT IF EXISTS aggiornamentoCosto;
 DELIMITER $$
