@@ -319,7 +319,8 @@ DELIMITER :
 
 -- =============================================================================================================== --
 -- 													OPERATION 6        		  									   --
--- Procedura che dato in ingresso un balcone calcola l'atezza da terrra del balcone preso in ingresso			   --
+-- Procedura che dato in ingresso un balcone calcola l'atezza da terrra del balcone preso in ingresso.			   --
+-- Fallisce se il balcone inserito non è presente. 																   --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS altezzaBalcone();
@@ -352,20 +353,20 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
--- Procedura che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute --
+-- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute --
 -- in un certo lasso di tempo per aggiornare lo stato dell'edificio, oltre ad aggiornare il valore numero dello    -- 
 -- stato rende in output un valore testuale per indicarne lo stato. [Ottime condizioni, Buone, Critiche etc].      --
 -- =============================================================================================================== --
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
--- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione e la rende in output   --
--- insieme al costo																								   --
+-- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione dopo una calamità.     -- 
+-- e la rende in output insieme al costo.																		   --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS costoRistrutturazioneArea;
 DELIMITER $$
-CREATE PROCEDURE costoRistrutturazioneArea ()
+CREATE PROCEDURE costoRistrutturazioneArea (IN _calamita VARCHAR(45))
 BEGIN
 	# MAIN 
 	WITH oreLavorateProgetto AS (
@@ -382,7 +383,7 @@ BEGIN
 		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+		WHERE LPE.`tipologia` = 'Ristrutturazione dopo' + _calamita + '%'  -- prende solamente i lavori che comprendono una ristrutturazione
 		GROUP BY L.`CF`, AG.`ID`
 	)
     , costoManodopera AS (
@@ -400,7 +401,7 @@ BEGIN
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
         JOIN `MaterialeUtilizzato` MU ON MU.`lavoro` = LPE.`ID`
         JOIN `Materiale` M ON M.`ID` = MU.`materiale`
-		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+		WHERE LPE.`tipologia` = 'Ristrutturazione dopo' + _calamita + '%' -- prende solamente i lavori che comprendono una ristrutturazione dopo una calamità
         GROUP BY AG.`ID`
     )
 	, costoArea AS (
