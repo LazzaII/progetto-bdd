@@ -77,11 +77,10 @@ CREATE TABLE IF NOT EXISTS `PuntoDiAccesso` (
   `lunghezza` DOUBLE UNSIGNED NOT NULL,
   `larghezza` DOUBLE UNSIGNED NOT NULL,
   `altezza` DOUBLE UNSIGNED NOT NULL,
-  `distanza_da_sx` SMALLINT UNSIGNED NOT NULL, -- distanza da sinistra
+  `distanza_da_sx` DOUBLE UNSIGNED NOT NULL, -- distanza da sinistra
   `tipo` VARCHAR(45) NOT NULL,
   `apertura` TINYINT NULL CHECK (`apertura` IN(0, 1, 2)) DEFAULT NULL, -- 0 per interna 1 per esterna 2 per a scorrimento
-  `altezza_chiave` SMALLINT UNSIGNED DEFAULT NULL ,
-  `angolo_curvatura` TINYINT UNSIGNED DEFAULT NULL,
+  `altezza_chiave` DOUBLE UNSIGNED DEFAULT NULL ,
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
@@ -348,13 +347,13 @@ CREATE UNIQUE INDEX `index_materiale5` ON `Piastrella` (`ID`);
 
 CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
     `codice` INT NOT NULL, 
-    `tipologia` VARCHAR(45) NOT NULL, -- potremmo mettere un check con i tipi di lavori possibili
+    `tipologia` VARCHAR(45) NOT NULL,
     `data_presentazione` DATETIME NOT NULL,
     `data_approvazione` DATETIME NOT NULL,
     `data_inizio` DATETIME NOT NULL,
     `data_stima_fine` DATETIME NOT NULL,
     `data_fine_effettiva` DATETIME,
-    `costo` INT UNSIGNED NOT NULL,
+    `costo` INT UNSIGNED NOT NULL DEFAULT 0,
     `edificio` INT NOT NULL, -- FK a edificio
 	PRIMARY KEY (`codice`),
     FOREIGN KEY (`edificio`) REFERENCES `Edificio` (`ID`)

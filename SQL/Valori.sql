@@ -55,7 +55,6 @@ INSERT INTO `Alveolatura` (`nome`, `descrizione`, `materiale_riempimento`) VALUE
 ('Forata F200', '4 file di camere', 'stucco'); -- isolante
 
 -- Inserimento materiali generici
--- nome, cod_lotto, fornitore, larghezza, lunghezza, altezza, costituzione, costo, unita, data_acquisto, quantita, colore
 CALL valorizzazioneMateriale ('Sbarra di acciaio - sa1', 17892, 'SteelMaster', 120, 10, 6, 'robusta, resistente', 0.70, 'k', CURRENT_DATE(), 82, 'grigio');
 CALL valorizzazioneMateriale ('Sbarra di acciaio - sa2', 17897, 'SteelMaster', 180, 12, 8, 'robusta, resistente', 0.90, 'k', CURRENT_DATE(), 76, 'grigio');
 CALL valorizzazioneMateriale ('Marmo B', 18462, 'CarraiaMarble', 20, 20, 3, 'lucida, resistente', 50.25, 'mq', CURRENT_DATE(), 90, 'bianco');
@@ -386,3 +385,56 @@ INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES
 (3, 9),
 (12, 11),
 (16, 15);
+
+-- Inserimenti aree colpita
+INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES 
+(1, 1, CURRENT_TIMESTAMP(), 6),
+(3, 1, CURRENT_TIMESTAMP(), 2),
+(4, 2, CURRENT_TIMESTAMP(), 8),
+(1, 6, CURRENT_TIMESTAMP, 1),
+(2, 4, CURRENT_TIMESTAMP(), 7),
+(5, 3, CURRENT_TIMESTAMP(), 6),
+(2, 5, CURRENT_TIMESTAMP(), 2),
+(5, 3, CURRENT_TIMESTAMP(), 10),
+(4, 5, CURRENT_TIMESTAMP, 5),
+(3, 6, CURRENT_TIMESTAMP(), 4);
+
+-- Inserimenti punti di accesso
+INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `tipo`, `apertura`, `altezza_chiave`, `parete`) VALUES
+(65, 8, 200, 15, 'Porta', 1, NULL, 22),
+(70, 10, 210, 50, 'Porta', 1, NULL, 13),
+(68, 9, 200, 30, 'Porta', 2, NULL, 44),
+(75, 12, 220, 28, 'Porta', 1, NULL, 19),
+(62, 8, 210, 40, 'Porta', 2, NULL, 60),
+(65, 8, 200, 5, 'Porta', 1, NULL, 20),
+(82, 11, 230, 20, 'Porta', 0, NULL, 45),
+(70, 8, 210, 40, 'Porta', 0, NULL, 36),
+(65, 9, 200, 15, 'Porta', 1, NULL, 7),
+(80, 10, 220, 70, 'Porta', 2, NULL, 14),
+(80, 14, 200, 5, 'Apertura senza serramenti', NULL, NULL, 18),
+(90, 15, 230, 20, 'Apertura senza serramenti', NULL, NULL, 27),
+(75, 11, 210, 40, 'Apertura senza serramenti', NULL, NULL, 42),
+(92, 12, 200, 15, 'Apertura senza serramenti', NULL, NULL, 39),
+(78, 10, 220, 70, 'Apertura senza serramenti', NULL, NULL, 31),
+(110, 14, 250, 10, 'Arco', NULL, NULL, 2),
+(130, 13, 260, 15, 'Arco', NULL, NULL, 17),
+(115, 13, 260, 10, 'Arco', NULL, NULL, 25);
+
+-- Inserimento finestre 
+INSERT INTO `Finestra` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `altezza_da_pavimento`, `orientamento`, `parete`) VALUES 
+(40, 8, 45, 30, 175, 'N', 1),
+(60, 10, 40, 40, 185, 'W', 7), 
+(50, 9, 45, 120, 175, 'SW', 45), 
+(45, 10, 30, 80, 160, 'NE', 23), 
+(45, 9, 30, 70, 165, 'S', 20),
+(80, 7, 80, 30, 175, 'S', 57),
+(60, 10, 30, 40, 185, 'SE', 39), 
+(70, 9, 40, 120, 175, 'W', 25), 
+(50, 8, 60, 80, 160, 'NW', 16), 
+(45, 9, 30, 70, 165, 'N', 48); 
+
+-- Inserimento progetti edilizi
+INSERT INTO `ProgettoEdilizio` (`codice`, `tipologia`, `data_presentazione`, `data_approvazione`, `data_inizio`, `data_stima_fine`, `data_fine_effettiva`, `edificio`) VALUES 
+(02112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(), CURRENT_DATE() + INTERVAL 12 DAY, CURRENT_DATE() + INTERVAL 30 DAY, CURRENT_DATE() + INTERVAL 30 DAY, 2), 
+(01112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 14 DAY, CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(),  CURRENT_DATE() + INTERVAL 14 DAY, CURRENT_DATE() + INTERVAL 18 DAY, 1),
+(29102022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 21 DAY, CURRENT_DATE() - INTERVAL 12 DAY, CURRENT_DATE() - INTERVAL 5 DAY, CURRENT_DATE() + INTERVAL 4 DAY, CURRENT_DATE() + INTERVAL 7 DAY, 2);
