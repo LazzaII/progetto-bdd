@@ -1,7 +1,7 @@
 -- Le misure come distanze, lunghezze, larghezze, e altezze sono espresse in cm
--- Il costo si misura in euro
+-- Il costo si indica in euro
 -- Se l'unita di misura è "pz" il prezzo è al pezzo
--- I pesi sono espressi al kg
+-- I pesi sono espressi in kg
 
 DROP DATABASE IF EXISTS SmartBuildings;
 CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
@@ -127,7 +127,6 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
   `altezza` DOUBLE UNSIGNED NOT NULL,
   `distanza_da_sx` SMALLINT UNSIGNED NOT NULL ,
   `altezza_da_pavimento` SMALLINT UNSIGNED NOT NULL,
-  `orientamento` VARCHAR(2) NOT NULL CHECK (`orientamento` IN ('N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W')),
   `parete` INT NOT NULL, -- FK a parete
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
@@ -514,9 +513,11 @@ CREATE UNIQUE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`distanza_da_sx` DOUBLE UNSIGNED NOT NULL, 
+    `altezza_dal_pavimento` DOUBLE UNSIGNED NOT NULL,
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
     `tipo` VARCHAR(45) NOT NULL, 
 	`soglia` DOUBLE NOT NULL, 
+    `unita_di_misura` VARCHAR(5) NOT NULL, 
 	`parete` INT NOT NULL, -- FK parete
 	PRIMARY KEY (`ID`),
     FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
@@ -530,7 +531,6 @@ CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
 	`livello` VARCHAR(2) NOT NULL CHECK(`livello` IN ('L0', 'L1', 'L2', 'L3', 'L4')), -- L0 misurazione che non impatta sullo stato dell'edificio
-	`unita_di_misura` VARCHAR(5) NOT NULL, 
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
     `valoreZ` DOUBLE,

@@ -126,8 +126,8 @@ DELIMITER ;
 -- =============================================================================================================== --
 -- 													OPERATION 2        		  									   --
 -- Dato in ingresso il codice fiscale di un lavoratore calcola il costo totale della manodopera del dipendente,    --
--- suddiviso per ogni progetto, restituisce un result set. Tiene conto della maggiorzione del 30% in caso di ore   --
--- di straordinario.                                                                                               --
+-- suddiviso per ogni progetto e il costo totale, restituisce un result set. Tiene conto della maggiorzione del    --
+-- 30% in caso di ore di straordinario.                                                                            --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS calcoloCostoManodopera;
@@ -160,7 +160,7 @@ BEGIN
     SELECT OLP.operaio, OLP.progetto, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS Costo
     FROM oreLavorateProgetto OLP
     JOIN Lavoratore L ON L.`CF` = OLP.operaio
-	GROUP BY OLP.progetto; 
+	GROUP BY OLP.progetto WITH ROLLUP; 
 END $$
 DELIMITER ;
 
@@ -258,6 +258,7 @@ DELIMITER ;
 -- 													OPERATION 5        		  									   --
 -- Evento che aggiorna ogni settimana la ridondanza del costo del progetto										   --
 -- =============================================================================================================== --
+-- MANCA DA CONTROLLARE CHE SIANO SOLO QUELLI DELL'ULTIMA SETTIMANA, per come è ora conta da zero sempre
 
 DROP EVENT IF EXISTS aggiornamentoCosto;
 DELIMITER $$
@@ -318,7 +319,8 @@ DELIMITER :
 
 -- =============================================================================================================== --
 -- 													OPERATION 6        		  									   --
--- Procedura che dato in ingresso un balcone calcola l'atezza da terrra del balcone preso in ingresso			   --
+-- Procedura che dato in ingresso un balcone calcola l'atezza da terrra del balcone preso in ingresso.			   --
+-- Fallisce se il balcone inserito non è presente. 																   --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS altezzaBalcone();
@@ -341,27 +343,30 @@ BEGIN
 	SELECT V.`edificio`, V.`piano` INTO idEdificio, numeroPiano
 	FROM `Balcone` B	
 	JOIN `BalconeVano` BV ON BV.`balcone` = B.`ID`
-	JOIN `Vano` V ON V.`ID` = BV.`vano` -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
+	JOIN `Vano` V ON V.`ID` = BV.`vano`; -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
 
-	SELECT SUM() INTO altezzaDaTerra
+	SELECT SUM(P.`altezza`) INTO altezzaDaTerra
 	FROM `Piano` P
-	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio
+	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio;
 END $$
 DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
+-- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute --
+-- in un certo lasso di tempo per aggiornare lo stato dell'edificio, oltre ad aggiornare il valore numero dello    -- 
+-- stato rende in output un valore testuale per indicarne lo stato. [Ottime condizioni, Buone, Critiche etc].      --
 -- =============================================================================================================== --
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
--- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione e la rende in output   --
--- insieme al costo																								   --
+-- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione dopo una calamità.     -- 
+-- e la rende in output insieme al costo.																		   --
 -- =============================================================================================================== --
 
 DROP PROCEDURE IF EXISTS costoRistrutturazioneArea;
 DELIMITER $$
-CREATE PROCEDURE costoRistrutturazioneArea ()
+CREATE PROCEDURE costoRistrutturazioneArea (IN _calamita VARCHAR(45))
 BEGIN
 	# MAIN 
 	WITH oreLavorateProgetto AS (
@@ -378,14 +383,14 @@ BEGIN
 		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+		WHERE LPE.`tipologia` = 'Ristrutturazione dopo' + _calamita + '%'  -- prende solamente i lavori che comprendono una ristrutturazione
 		GROUP BY L.`CF`, AG.`ID`
 	)
     , costoManodopera AS (
 		SELECT OLP.AreaGeografica, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS costoManodopera
 		FROM oreLavorateProgetto OLP
 		JOIN Lavoratore L ON L.`CF` = OLP.AreaGeografica
-		GROUP BY OLP.AreaGeografica,
+		GROUP BY OLP.AreaGeografica
     ) -- calcolo del costo totale dei materiali per ogni progetto
     , costoMateriali AS (
 		SELECT AG.`ID` AS AreaGeografica, SUM(M.`costo` * MU.`quantita`) as costoMateriali
@@ -396,7 +401,7 @@ BEGIN
 		JOIN `LavoroProgettoEdilizio` LPE ON LPE.`stadio` = SDA.`ID`
         JOIN `MaterialeUtilizzato` MU ON MU.`lavoro` = LPE.`ID`
         JOIN `Materiale` M ON M.`ID` = MU.`materiale`
-		WHERE LPE.`tipologia` = 'Ristrutturazione%' -- prende solamente i lavori che comprendono una ristrutturazione
+		WHERE LPE.`tipologia` = 'Ristrutturazione dopo' + _calamita + '%' -- prende solamente i lavori che comprendono una ristrutturazione dopo una calamità
         GROUP BY AG.`ID`
     )
 	, costoArea AS (
@@ -406,7 +411,7 @@ BEGIN
 	)
 	SELECT CA.AreaGeografica, CA.costo
 	FROM costoArea CA
-	WHERE CA.costo WHERE = (SELECT MAX(CA2.costo) FROM costArea CA2);
+	WHERE CA.costo = (SELECT MAX(CA2.costo) FROM costArea CA2);
 END $$
 DELIMITER ;
 -- =============================================================================================================== --
