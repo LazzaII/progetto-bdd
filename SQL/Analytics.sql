@@ -1,5 +1,14 @@
 USE SmartBuildings;
 
+-- TABELLA CON 
+# LEGNO -> umidità
+# CEMENTO -> fessure
+# ACCELEROSCOPI -> oscillazioni struttura (vento simile terremoto)
+# DEGRADO DELLE UNIONI DELL'ACCIACIO -> stato bulloni, stato saldature (forse non perchè sono visivi)
+# UMIDITÀ, CREPE NEI MURI
+# SOLAI vedere l'abbassamento (abbassamento = freccia) "stimare la freccia del solaio"
+# INFILTRAZIONI dal tetto (anche questa è più visiva)
+
 /*
 CONSIGLI DI INTERVENTO
 A fronte dell’analisi dei dati dei sensori, un sistema intelligente, realizzato tramite
@@ -17,7 +26,26 @@ spesa sarebbe necessaria. I termini in italico corrispondono ai valori numerici 
 sistema dovrebbe stimare.
 */
 
+DROP PROCEDURE IF EXISTS consigliIntervento;
+DELIMITER $$
+CREATE PROCEDURE consigliIntervento(IN _idEdificio INT)
+BEGIN
+	#UTILS
+	DROP TABLE IF EXISTS interventi; 
+    CREATE TEMPORARY TABLE interventi (
+        intervento TEXT NOT NULL,
+        rischio INT NOT NULL,
+        PRIMARY KEY(intervento)
+    ); 
 
+	# esempio
+	#CALL stimamuro(@intervento);
+    #UPDATE interventi
+    #SET intervento = @intervento WHERE tipologia = 'muri';
+    
+		
+END $$
+DELIMITER ;
 
 
 /*

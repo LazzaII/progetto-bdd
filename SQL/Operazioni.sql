@@ -258,7 +258,6 @@ DELIMITER ;
 -- 													OPERATION 5        		  									   --
 -- Evento che aggiorna ogni settimana la ridondanza del costo del progetto										   --
 -- =============================================================================================================== --
--- MANCA DA CONTROLLARE CHE SIANO SOLO QUELLI DELL'ULTIMA SETTIMANA, per come è ora conta da zero sempre
 
 DROP EVENT IF EXISTS aggiornamentoCosto;
 DELIMITER $$
@@ -288,7 +287,8 @@ BEGIN
 		JOIN `SvolgimentoTurno` ST ON ST.`lavoratore` = L.`CF`
 		JOIN `Turno` T ON (T.`giorno` = ST.`giorno` AND T.`ora_inizio` = ST.`ora_inizio` AND T.`ora_fine` = ST.`ora_fine`) 
 					   OR (T.`giorno` = LDT.`giorno` AND T.`ora_inizio` = LDT.`ora_inizio` AND T.`ora_fine` = LDT.`ora_fine`)
-		GROUP BY L.`CF`, PE.`codice`
+		WHERE T.`giorno` > CURRENT_DATE - INTERVAL 7 DAY
+        GROUP BY L.`CF`, PE.`codice`
 	)
     , costoManodopera AS (
 		SELECT OLP.progetto, SUM(costoManodoperaGiornaliera(OLP.minutiLavorati, L.`retribuzione_oraria`)) AS costoManodopera
@@ -312,7 +312,7 @@ BEGIN
     -- aggiornamento della tabella
 	UPDATE `ProgettoEdilizio` PE
 		JOIN costoProgetto CP ON CP.progetto = PE.`codice`
-	SET PE.`costo` = CP.costo;
+	SET PE.`costo` = PE.`costo` + CP.costo;
     
 END $$
 DELIMITER :
@@ -353,10 +353,12 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
--- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute --
+-- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute    --
 -- in un certo lasso di tempo per aggiornare lo stato dell'edificio, oltre ad aggiornare il valore numero dello    -- 
 -- stato rende in output un valore testuale per indicarne lo stato. [Ottime condizioni, Buone, Critiche etc].      --
 -- =============================================================================================================== --
+
+
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
