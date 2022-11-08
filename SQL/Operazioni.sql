@@ -359,9 +359,44 @@ DELIMITER ;
 -- =============================================================================================================== --
 
 
-
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
+-- Procedura che calcola l'AreaGeografica maggiormente colpita da calamità in un intervallo di tempo dato.		   --
+-- Oltre all'area geografica rende in output la calamità che ha colpito più volte quell'area geografica			   --
+-- =============================================================================================================== --
+DROP PROCEDURE IF EXISTS areaMaggiormenteColpita;
+DELIMITER $$
+CREATE PROCEDURE areaMaggiormenteColpita (IN _mesi INT, OUT area VARCHAR(45), OUT calamita VARCHAR(45))
+BEGIN
+	# VAR
+	DECLARE tmpId INT DEFAULT 0;
+
+	# MAIN
+	WITH areaMaggiore AS (
+		SELECT COUNT(1) AS numCalamità, AG.`nome`, AG.`ID`
+		FROM `AreaGeografica` AG
+		JOIN `AreaColpita` AC ON AC.`area` = AG.`ID`
+		GROUP BY AC`area`
+	)
+	SELECT AM.`nome`, AM.`ID` INTO area, tmpId
+	FROM areaMaggiore AM
+	WHERE numCalamità = (SELECT MAX(AM2.numCalamità) FROM areaMaggiore AM2);
+
+	WITH calamitaMaggiore AS (
+		SELECT COUNT(1) AS numSingCalamita, AC.`calamita` 
+		FROM `AreaColpita` AC
+		WHERE AC.`area` = tmpId
+		GROUP BY AC.`calamita`
+	)
+	SELECT CM.`calamita` INTO calamita
+	FROM calamitaMaggiore CM 
+	WHERE numSingCalamita = (SELECT MAX(CM2.calamitaMaggiore) FROM calamitaMaggiore CM2);
+	
+END $$
+DELIMITER ;
+
+-- =============================================================================================================== --
+-- 													  EXTRA        		  									   --
 -- Procedura che calcola l'AreaGeografica che ha speso di più per costi di ristrutturazione dopo una calamità.     -- 
 -- e la rende in output insieme al costo.																		   --
 -- =============================================================================================================== --

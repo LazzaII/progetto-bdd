@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `Piano` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_edificio1` ON `Piano` (`edificio`);
+CREATE INDEX `index_edificio1` ON `Piano` (`edificio`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -65,10 +65,10 @@ CREATE TABLE IF NOT EXISTS `Vano` (
 		ON DELETE SET NULL -- piastrella rimossa
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_piano` ON `Vano` (`piano`);
-CREATE UNIQUE INDEX `index_edificio2` ON `Vano` (`edificio`);
-CREATE UNIQUE INDEX `index_parquet` ON `Vano` (`parquet`);
-CREATE UNIQUE INDEX `index_piastrella` ON `Vano` (`piastrella`);
+CREATE INDEX `index_piano` ON `Vano` (`piano`);
+CREATE INDEX `index_edificio2` ON `Vano` (`edificio`);
+CREATE INDEX `index_parquet` ON `Vano` (`parquet`);
+CREATE INDEX `index_piastrella` ON `Vano` (`piastrella`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -115,8 +115,8 @@ CREATE TABLE IF NOT EXISTS `BalconeVano` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_vano1` ON `BalconeVano` (`vano`);
-CREATE UNIQUE INDEX `index_balcone` ON `BalconeVano` (`balcone`);
+CREATE INDEX `index_vano1` ON `BalconeVano` (`vano`);
+CREATE INDEX `index_balcone` ON `BalconeVano` (`balcone`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `Finestra` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_finestra` ON `Finestra` (`parete`);
+CREATE INDEX `index_finestra` ON `Finestra` (`parete`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS `Rischio` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_area_geografica2` ON `Rischio` (`area_geografica`);
+CREATE INDEX `index_area_geografica2` ON `Rischio` (`area_geografica`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -183,8 +183,8 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
 			ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_area_geografica3` ON `AreaColpita` (`area`);
-CREATE UNIQUE INDEX `index_calamita` ON `AreaColpita` (`calamita`);
+CREATE INDEX `index_area_geografica3` ON `AreaColpita` (`area`);
+CREATE INDEX `index_calamita` ON `AreaColpita` (`calamita`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   `mattone` INT NOT NULL, -- FK al tipo di mattone
   `vano` INT NOT NULL, -- FK al vano
   `pietra` INT DEFAULT NULL, -- FK a pietra (non tutti sono per forza rivestite in pietra)
-  `lungheza` DOUBLE UNSIGNED,
+  `lunghezza` DOUBLE UNSIGNED,
   PRIMARY KEY (`ID`),
   FOREIGN KEY (`pietra`) REFERENCES `Pietra` (`ID`)
 		ON UPDATE CASCADE
@@ -212,9 +212,9 @@ CREATE TABLE IF NOT EXISTS `Parete` (
   UNIQUE (`id_parete_vano`, `vano`)
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_pietra` ON `Parete` (`pietra`);
-CREATE UNIQUE INDEX `index_mattone` ON `Parete` (`mattone`);
-CREATE UNIQUE INDEX `index_vano2` ON `Parete` (`vano`);
+CREATE INDEX `index_pietra` ON `Parete` (`pietra`);
+CREATE INDEX `index_mattone` ON `Parete` (`mattone`);
+CREATE INDEX `index_vano2` ON `Parete` (`vano`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS `Pietra` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_materiale1` ON `Pietra` (`ID`);
+CREATE INDEX `index_materiale1` ON `Pietra` (`ID`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -268,8 +268,8 @@ CREATE TABLE IF NOT EXISTS `Mattone` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_alveolatura` ON `Mattone` (`alveolatura`);
-CREATE UNIQUE INDEX `index_materiale2` ON `Mattone` (`ID`);
+CREATE INDEX `index_alveolatura` ON `Mattone` (`alveolatura`);
+CREATE INDEX `index_materiale2` ON `Mattone` (`ID`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -294,7 +294,7 @@ CREATE TABLE IF NOT EXISTS `Intonaco` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_materiale3` ON `Intonaco` (`ID`);
+CREATE INDEX `index_materiale3` ON `Intonaco` (`ID`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -311,8 +311,8 @@ CREATE TABLE IF NOT EXISTS `StratoIntonaco` (
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_parete2` ON `StratoIntonaco` (`parete`);
-CREATE UNIQUE INDEX `index_intonaco` ON `StratoIntonaco` (`intonaco`);
+CREATE INDEX `index_parete2` ON `StratoIntonaco` (`parete`);
+CREATE INDEX `index_intonaco` ON `StratoIntonaco` (`intonaco`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -325,7 +325,7 @@ CREATE TABLE IF NOT EXISTS `Parquet`(
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_materiale4` ON `Parquet` (`ID`);
+CREATE INDEX `index_materiale4` ON `Parquet` (`ID`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -340,7 +340,7 @@ CREATE TABLE IF NOT EXISTS `Piastrella`(
         ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_materiale5` ON `Piastrella` (`ID`);
+CREATE INDEX `index_materiale5` ON `Piastrella` (`ID`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -360,7 +360,7 @@ CREATE TABLE IF NOT EXISTS `ProgettoEdilizio` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_edificio3` ON `ProgettoEdilizio` (`edificio`);
+CREATE INDEX `index_edificio3` ON `ProgettoEdilizio` (`edificio`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -377,7 +377,7 @@ CREATE TABLE IF NOT EXISTS `StadioDiAvanzamento` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_progetto_edilizio1` ON `StadioDiAvanzamento` (`progetto_edilizio`);
+CREATE INDEX `index_progetto_edilizio1` ON `StadioDiAvanzamento` (`progetto_edilizio`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -392,7 +392,7 @@ CREATE TABLE IF NOT EXISTS `LavoroProgettoEdilizio` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_stadio` ON `LavoroProgettoEdilizio` (`stadio`);
+CREATE INDEX `index_stadio` ON `LavoroProgettoEdilizio` (`stadio`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -409,8 +409,8 @@ CREATE TABLE IF NOT EXISTS `MaterialeUtilizzato` (
         ON DELETE NO ACTION -- materiale rimosso ma comunque utilizzato quindi va tenuto il record
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_lavoro1` ON `MaterialeUtilizzato` (`lavoro`);
-CREATE UNIQUE INDEX `index_materiale6` ON `MaterialeUtilizzato` (`materiale`);
+CREATE INDEX `index_lavoro1` ON `MaterialeUtilizzato` (`lavoro`);
+CREATE INDEX `index_materiale6` ON `MaterialeUtilizzato` (`materiale`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -437,8 +437,8 @@ CREATE TABLE IF NOT EXISTS `PartecipazioneLavoratoreLavoro` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_lavoratore1` ON `PartecipazioneLavoratoreLavoro` (`lavoratore`);
-CREATE UNIQUE INDEX `index_lavoro2` ON `PartecipazioneLavoratoreLavoro` (`lavoro`);
+CREATE INDEX `index_lavoratore1` ON `PartecipazioneLavoratoreLavoro` (`lavoratore`);
+CREATE INDEX `index_lavoro2` ON `PartecipazioneLavoratoreLavoro` (`lavoro`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -454,8 +454,8 @@ CREATE TABLE IF NOT EXISTS `SupervisioneLavoro` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_lavoratore2` ON `SupervisioneLavoro` (`lavoratore`);
-CREATE UNIQUE INDEX `index_lavoro3` ON `SupervisioneLavoro` (`lavoro`);
+CREATE INDEX `index_lavoratore2` ON `SupervisioneLavoro` (`lavoratore`);
+CREATE INDEX `index_lavoro3` ON `SupervisioneLavoro` (`lavoro`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -484,9 +484,9 @@ CREATE TABLE IF NOT EXISTS `LavoratoreDirigeTurno` ( -- il turno può avere più
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_ora_inizio1` ON `LavoratoreDirigeTurno` (`ora_inizio`);
-CREATE UNIQUE INDEX `index_ora_fine1` ON `LavoratoreDirigeTurno` (`ora_fine`);
-CREATE UNIQUE INDEX `index_giorno1` ON `LavoratoreDirigeTurno` (`giorno`);
+CREATE INDEX `index_ora_inizio1` ON `LavoratoreDirigeTurno` (`ora_inizio`);
+CREATE INDEX `index_ora_fine1` ON `LavoratoreDirigeTurno` (`ora_fine`);
+CREATE INDEX `index_giorno1` ON `LavoratoreDirigeTurno` (`giorno`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -504,16 +504,16 @@ CREATE TABLE IF NOT EXISTS `SvolgimentoTurno` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_ora_inizio2` ON `SvolgimentoTurno` (`ora_inizio`);
-CREATE UNIQUE INDEX `index_ora_fine2` ON `SvolgimentoTurno` (`ora_fine`);
-CREATE UNIQUE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
+CREATE INDEX `index_ora_inizio2` ON `SvolgimentoTurno` (`ora_inizio`);
+CREATE INDEX `index_ora_fine2` ON `SvolgimentoTurno` (`ora_fine`);
+CREATE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
 
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
 	`distanza_da_sx` DOUBLE UNSIGNED, 
-    `altezza_dal_pavimento` DOUBLE UNSIGNED NOT NULL,
+    `altezza_da_pavimento` DOUBLE UNSIGNED NOT NULL,
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
     `tipo` VARCHAR(45) NOT NULL, 
 	`soglia` DOUBLE NOT NULL, 
@@ -525,8 +525,8 @@ CREATE TABLE IF NOT EXISTS `Sensore` (
     FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_parete3` ON `Sensore` (`parete`);
-CREATE UNIQUE INDEX `index_vano3`ON `Sensore` (`vano`);
+CREATE INDEX `index_parete3` ON `Sensore` (`parete`);
+CREATE INDEX `index_vano3`ON `Sensore` (`vano`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -543,6 +543,6 @@ CREATE TABLE IF NOT EXISTS `Misurazione` (
         ON DELETE NO ACTION
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_id_sensore` ON `Misurazione` (`id_sensore`);
+CREATE INDEX `index_id_sensore` ON `Misurazione` (`id_sensore`);
 
 -- ------------------------------------------------------------------------------------------

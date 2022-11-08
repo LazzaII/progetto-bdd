@@ -60,8 +60,8 @@ INSERT INTO `Alveolatura` (`nome`, `descrizione`, `materiale_riempimento`) VALUE
 ('Forata F200', '4 file di camere', 'stucco'); -- isolante
 
 -- Popolamento materiali generici
-CALL valorizzazioneMateriale ('Sbarra di acciaio - sa1', 17892, 'SteelMaster', 120, 10, 6, 'robusta, resistente', 0.70, 'k', CURRENT_DATE(), 82, 'grigio');
-CALL valorizzazioneMateriale ('Sbarra di acciaio - sa2', 17897, 'SteelMaster', 180, 12, 8, 'robusta, resistente', 0.90, 'k', CURRENT_DATE(), 76, 'grigio');
+CALL valorizzazioneMateriale ('Sbarra di acciaio - sa1', 17892, 'SteelMaster', 120, 10, 6, 'robusta, resistente', 0.70, 'kg', CURRENT_DATE(), 82, 'grigio');
+CALL valorizzazioneMateriale ('Sbarra di acciaio - sa2', 17897, 'SteelMaster', 180, 12, 8, 'robusta, resistente', 0.90, 'kg', CURRENT_DATE(), 76, 'grigio');
 CALL valorizzazioneMateriale ('Marmo B', 18462, 'CarraiaMarble', 20, 20, 3, 'lucida, resistente', 50.25, 'mq', CURRENT_DATE(), 90, 'bianco');
 CALL valorizzazioneMateriale ('Marmo Botticino', 18471, 'CarraiaMarble', 30, 25, 3, 'lucida, resistente', 60.35, 'mq', CURRENT_DATE(), 78, 'bianco');
 CALL valorizzazioneMateriale ('Marmo N', 18489, 'CarraiaMarble', 35, 35, 3, 'lucida, resistente', 75.80, 'mq', CURRENT_DATE(), 110, 'nero');
@@ -143,13 +143,13 @@ INSERT INTO `Pietra` VALUES (@id, 'pietra serena - grana fine', 0.22, 160, 'mist
 CALL valorizzazioneMateriale ('Intonaco C', 14117, 'PlasterPros', 0, 0, 0, 'liscio', 14, 'mq', CURRENT_DATE(), 285, 'bianco');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Intonaco civile'; 
+WHERE M.`nome` = 'Intonaco C'; 
 INSERT INTO `Intonaco` VALUES (@id, 0.6, 'civile');
 
 CALL valorizzazioneMateriale ('Intonaco D-1', 14118, 'PlasterPros', 0, 0, 0, 'liscio', 18, 'mq', CURRENT_DATE(), 170, 'rosso');
 SELECT M.`ID` INTO @id
 FROM Materiale M
-WHERE M.`nome` = 'Intonaco  D'; 
+WHERE M.`nome` = 'Intonaco D-1'; 
 INSERT INTO `Intonaco` VALUES (@id, 0.5, 'decorativo');
 
 CALL valorizzazioneMateriale ('Intonaco R', 14119, 'PlasterPros', 0, 0, 0, 'scanalato, resistente', 18, 'mq', CURRENT_DATE(), 165, 'giallo');
@@ -233,15 +233,15 @@ INSERT INTO `Lavoratore` (`CF`, `nome`, `cognome`, `retribuzione_oraria`, `tipo`
 ('RMOMRO643S102H', 'Romano', 'Marroni', 8.1, 'semplice'),
 ('UBRBLU456D612D', 'Umberto', 'Blu', 11.6, 'responsabile');
 
--- Popolamento rischi
+-- Popolamento rischi 
 INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES 
-(1, `Terremoto`, 8),
+(1, 'Terremoto', 8),
 (1, 'Frana', 10),
 (5, 'Tromba aria', 9),
 (5, 'Incendio', 2),
 (2, 'Frana', 8),
 (3, 'Incendio', 9),
-(4, 'Alluvione', 6);
+(4, 'Alluvione', 6); 
 
 -- Popolamento edifici
 INSERT INTO `Edificio` (`isFinito`, `tipologia`, `stato`, `area_geografica`) VALUES 
@@ -400,7 +400,7 @@ INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES
 (2, 4, CURRENT_TIMESTAMP(), 7),
 (5, 3, CURRENT_TIMESTAMP(), 6),
 (2, 5, CURRENT_TIMESTAMP(), 2),
-(5, 3, CURRENT_TIMESTAMP(), 10),
+(5, 4, CURRENT_TIMESTAMP(), 10),
 (4, 5, CURRENT_TIMESTAMP, 5),
 (3, 6, CURRENT_TIMESTAMP(), 4);
 
@@ -426,17 +426,17 @@ INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_
 (115, 13, 260, 10, 'Arco', NULL, NULL, 25);
 
 -- Popolamento finestre 
-INSERT INTO `Finestra` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `altezza_da_pavimento`, `orientamento`, `parete`) VALUES 
-(40, 8, 45, 30, 175, 'N', 1),
-(60, 10, 40, 40, 185, 'W', 7), 
-(50, 9, 45, 120, 175, 'SW', 45), 
-(45, 10, 30, 80, 160, 'NE', 23), 
-(45, 9, 30, 70, 165, 'S', 20),
-(80, 7, 80, 30, 175, 'S', 57),
-(60, 10, 30, 40, 185, 'SE', 39), 
-(70, 9, 40, 120, 175, 'W', 25), 
-(50, 8, 60, 80, 160, 'NW', 16), 
-(45, 9, 30, 70, 165, 'N', 48); 
+INSERT INTO `Finestra` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `altezza_da_pavimento`, `parete`) VALUES 
+(40, 8, 45, 30, 175, 1),
+(60, 10, 40, 40, 185, 7), 
+(50, 9, 45, 120, 175, 45), 
+(45, 10, 30, 80, 160, 23), 
+(45, 9, 30, 70, 165, 20),
+(80, 7, 80, 30, 175, 57),
+(60, 10, 30, 40, 185, 39), 
+(70, 9, 40, 120, 175, 25), 
+(50, 8, 60, 80, 160, 16), 
+(45, 9, 30, 70, 165, 48); 
 
 -- Popolamento progetti edilizi
 INSERT INTO `ProgettoEdilizio` (`codice`, `tipologia`, `data_presentazione`, `data_approvazione`, `data_inizio`, `data_stima_fine`, `data_fine_effettiva`, `edificio`) VALUES 
@@ -462,9 +462,9 @@ INSERT INTO `LavoroProgettoEdilizio` (`tipologia`, `isCompleto`, `stadio`) VALUE
 ('Sopralluogo e raccoglimento materiale', 0, 1),
 ('Sopralluogo e raccoglimento materiale', 1, 2),
 ('Sopralluogo e raccoglimento materiale', 0, 3), 
-('Rimozione precedenti sanitari', 0, 1), 
-('Rimozione piastrelle pavimento', 1, 1),
-('Rifacimento condotti', 0, 1),
+('Ristrutturazione dopo terremoto', 0, 1), 
+('Ristrutturazione dopo terremoto', 1, 1),
+('Ristrutturazione dopo terremoto', 0, 1),
 ('Posizionamento piastrelle e sanitari', 0, 1),
 ('Posizionamento tasselli e collante', 1, 3), 
 ('Posizionamento pannelli isolanti', 0, 3), 
@@ -563,26 +563,26 @@ INSERT INTO `StratoIntonaco` (`strato`, `parete`, `intonaco`) VALUES
 
 -- Popolamento sensori 
 INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `tipo`, `soglia`, `unita_di_misura`, `parete`, `vano`) VALUES 
-(40, 180, 0, 'fessurimetro', , 'mm', 12, NULL), 
-(NULL, 0, 0, 'accelerometro', , 'mm/s^2', NULL, 8), 
-(20, 15, 0, 'giroscopio', , 'Nmm', NULL, 6), 
-(60, 175, 0, 'termometro', , '°C', 23, NULL), 
-(70, 180, 0, 'termometro', , '°C', 7, NULL), 
-(40, 200, 0, 'igrometro', , 'g/m^3', 45, NULL), 
-(30, 210, 1, 'pluviometro', , 'mm', NULL, NULL), 
-(NULL, 200, 1, 'pluviometro', , 'mm', NULL, NULL), 
-(35, 190, 0, 'igrometro', , 'g/m^3', 33, NULL), 
-(NULL, 220, 1, 'pluviometro', , 'mm', NULL, NULL), 
-(60, 5, 1, 'igrometro', , 'g/m^3', 72, NULL), 
-(40, 10, 1, 'igrometro', , 'g/m^3', 70, NULL), 
-(30, 185, 0, 'fessurimetro', , 'mm', 57, NULL), 
-(30, 140, 0, 'giroscopio', , 'Nmm', NULL, 12), 
-(40, 100, 0, 'giroscopio', , 'Nmm', NULL, 9), 
-(20, 10, 0, 'accelerometro', , 'mm/s^2', NULL, 3), 
-(20, 175, 0, 'fessurimetro', , 'mm', 30, NULL), 
-(35, 120, 1, 'termometro', , '°C', 21, NULL), 
-(45, 175, 0, 'fessurimetro', , 'mm', 69, NULL), 
-(50, 160, 1, 'termometro', , '°C', 14, NULL);
+(40, 180, 0, 'fessurimetro', 50, 'mm', 12, NULL), 
+(NULL, 0, 0, 'accelerometro', 10, 'mm/s^2', NULL, 8), 
+(20, 15, 0, 'giroscopio', 10, 'Nmm', NULL, 6), 
+(60, 175, 0, 'termometro', 55, '°C', 23, NULL), 
+(70, 180, 0, 'termometro', -10, '°C', 7, NULL), 
+(40, 200, 0, 'igrometro', 150, '%', 45, NULL), 
+(30, 210, 1, 'pluviometro', 300, 'mm', NULL, NULL), 
+(NULL, 200, 1, 'pluviometro', 280, 'mm', NULL, NULL), 
+(35, 190, 0, 'igrometro', 120, '%', 33, NULL), 
+(NULL, 220, 1, 'pluviometro', 310, 'mm', NULL, NULL), 
+(60, 5, 1, 'igrometro', 120, '%', 72, NULL), 
+(40, 10, 1, 'igrometro', 110, '%', 70, NULL), 
+(30, 185, 0, 'fessurimetro', 50, 'mm', 57, NULL), 
+(30, 140, 0, 'giroscopio', 15, 'Nmm', NULL, 12), 
+(40, 100, 0, 'giroscopio', 10, 'Nmm', NULL, 9), 
+(20, 10, 0, 'accelerometro', 15, 'mm/s^2', NULL, 3), 
+(20, 175, 0, 'fessurimetro', 45, 'mm', 30, NULL), 
+(35, 120, 1, 'termometro', -15, '°C', 21, NULL), 
+(45, 175, 0, 'fessurimetro', 40, 'mm', 69, NULL), 
+(50, 160, 1, 'termometro', 60, '°C', 14, NULL);
 
 /*
 	Genera una misura relativamente ad un sensore.
@@ -593,7 +593,12 @@ CREATE PROCEDURE generaMisura (_sensore INT)
 BEGIN
 	DECLARE ts TIMESTAMP DEFAULT NULL;
     DECLARE tipo TEXT DEFAULT '';
-    DECLARE num INT DEFAULT 1; 
+    DECLARE soglia DOUBLE DEFAULT 0;
+    DECLARE val1 DOUBLE DEFAULT 0;
+    DECLARE val2 DOUBLE DEFAULT NULL;
+    DECLARE val3 DOUBLE DEFAULT NULL;
+    DECLARE percentualeLivello DOUBLE DEFAULT 0;
+    DECLARE livello VARCHAR(2) DEFAULT 'L0';
 
 	-- controllo se il sensore è presente
 	IF NOT EXISTS (SELECT 1 FROM `Sensore` S WHERE S.`ID` = _sensore)
@@ -602,20 +607,70 @@ BEGIN
 		SET MESSAGE_TEXT = '[ERROR] Sensore non presente';
 	END IF;
     
-    SELECT S.`tipo` INTO tipo
+    SELECT S.`tipo`, S.`soglia` INTO tipo, soglia
     FROM `Sensore` S
     WHERE S.`ID` = _sensore;
     
     IF(tipo = 'accelerometro' OR tipo = 'giroscopio') 
     THEN 
-		SET num = 3; 
+		-- genera un numero random tra soglia(max) e 0(min)
+		SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val1;
+        SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val2;
+        SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val3;
+
+        SET percentualeLivello = ROUND(SQRT(val1*val1+val2*val2+val3*val3)/soglia, 2)*100;
+	ELSE 
+		SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val1;
+
+        SET percentualeLivello = ROUND(val1/soglia, 2)*100;
 	END IF;
     
     -- creo un timestamp "randomico"
     -- converte la data iniziale in un timestamp unix e aggiunge un valore random tra 0 secondi e +2 anni poi lo converte nuovamente in timestamp
-    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-25-12 00:00:00') + FLOOR(0 + (RAND() * 63072000))); 
+    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000))); 
+
+    -- identifico il livello
+    IF (percentualeLivello >= 100) THEN
+        SET livello = 'L4';
+    ELSEIF (percentualeLivello < 100 AND percentualeLivello >= 75) THEN
+        SET livello = 'L3';
+    ELSEIF (percentualeLivello < 75 AND percentualeLivello >= 50) THEN
+        SET livello = 'L2';
+    ELSEIF (percentualeLivello < 50 AND percentualeLivello >= 25) THEN
+        SET livello = 'L1';
+    ELSE 
+        SET livello = 'L0';
+    END IF;
     
+    INSERT INTO `Misurazione` (`id_sensore`, `timestamp`, `livello`, `valoreX`, `valoreY`, `valoreZ`) VALUES (_sensore, ts, livello, val1, val2, val3);
 END $$ 
 DELIMITER ;
 
 -- Popolamento misurazioni
+DROP PROCEDURE IF EXISTS inserisciMisurazioni;
+DELIMITER $$
+CREATE PROCEDURE inserisciMisurazioni()
+BEGIN 
+    DECLARE finito INT DEFAULT 0;
+    DECLARE sensore INT DEFAULT 0;
+    DECLARE contatore INT DEFAULT 0;
+
+    DECLARE cur_sensori CURSOR FOR 
+    SELECT S.`ID`
+    FROM Sensore S;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
+
+    OPEN cur_sensori;
+    WHILE finito = 0 DO
+        FETCH cur_sensori INTO sensore;
+        WHILE contatore < 5 DO
+            CALL generaMisura(sensore);
+            SET contatore = contatore + 1;
+        END WHILE;
+        SET contatore = 0;
+    END WHILE; 
+    CLOSE cur_sensori;
+END $$ 
+DELIMITER ;
+CALL inserisciMisurazioni();
