@@ -512,25 +512,28 @@ CREATE UNIQUE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
-	`distanza_da_sx` DOUBLE UNSIGNED NOT NULL, 
+	`distanza_da_sx` DOUBLE UNSIGNED, 
     `altezza_dal_pavimento` DOUBLE UNSIGNED NOT NULL,
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
     `tipo` VARCHAR(45) NOT NULL, 
 	`soglia` DOUBLE NOT NULL, 
-    `unita_di_misura` VARCHAR(5) NOT NULL, 
-	`parete` INT NOT NULL, -- FK parete
+    `unita_di_misura` VARCHAR(6) NOT NULL, 
+	`parete` INT, -- FK parete
+    `vano` INT, -- FK vano
 	PRIMARY KEY (`ID`),
-    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`)
+    FOREIGN KEY (`parete`) REFERENCES `Parete` (`ID`),
+    FOREIGN KEY (`vano`) REFERENCES `Vano` (`ID`)
 ) ENGINE = InnoDB;
 
 CREATE UNIQUE INDEX `index_parete3` ON `Sensore` (`parete`);
+CREATE UNIQUE INDEX `index_vano3`ON `Sensore` (`vano`);
 
 -- ------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `Misurazione` (
 	`id_sensore` INT NOT NULL,
 	`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
-	`livello` VARCHAR(2) NOT NULL CHECK(`livello` IN ('L0', 'L1', 'L2', 'L3', 'L4')), -- L0 misurazione che non impatta sullo stato dell'edificio
+	`livello` VARCHAR(2) CHECK(`livello` IN ('L0', 'L1', 'L2', 'L3', 'L4')), -- L0 misurazione che non impatta sullo stato dell'edificio
 	`valoreX` DOUBLE NOT NULL, -- se y e z sono null x diventa il valore misurato
     `valoreY` DOUBLE,
     `valoreZ` DOUBLE,

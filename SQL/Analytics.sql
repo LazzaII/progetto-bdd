@@ -1,12 +1,40 @@
 USE SmartBuildings;
 
+DROP PROCEDURE IF EXISTS checkUmidità;
+DELIMITER $$
+CREATE PROCEDURE checkUmidità(IN _idEdificio INT, IN tipo VARCHAR(7) OUT stato TEXT)
+BEGIN 
+    # VAR
+    DECLARE media DOUBLE DEFAULT 0;
+    DECLARE counter INT DEFAULT 0;
+
+    # MAIN
+    CASE
+        WHEN tipo = 'MURO'
+        THEN
+            SELECT 
+            FROM `Misurazione` M
+            JOIN `Sensore` S ON S.`ID` = M.`ID`
+            JOIN `Parete` P ON P.`ID` = S.`parete`
+            WHERE 
+        WHEN tipo = 'PARQUET'
+            SELECT 
+            FROM `Misurazione` M
+            JOIN `Sensore` S ON S.`ID` = M.`ID`
+            JOIN `Vano` V ON V.`ID` = V.`vano`
+        THEN
+
+
+END $$
+DELIMITER ;
+
 -- TABELLA CON 
 # LEGNO -> umidità
 # CEMENTO -> fessure
 # ACCELEROSCOPI -> oscillazioni struttura (vento simile terremoto)
-# DEGRADO DELLE UNIONI DELL'ACCIACIO -> stato bulloni, stato saldature (forse non perchè sono visivi)
+# DEGRADO DELLE UNIONI DELL ACCIACIO -> stato bulloni, stato saldature (forse non perchè sono visivi)
 # UMIDITÀ, CREPE NEI MURI
-# SOLAI vedere l'abbassamento (abbassamento = freccia) "stimare la freccia del solaio"
+# SOLAI vedere l abbassamento (abbassamento = freccia) stimare la freccia del solaio
 # INFILTRAZIONI dal tetto (anche questa è più visiva)
 
 /*
@@ -37,11 +65,6 @@ BEGIN
         rischio INT NOT NULL,
         PRIMARY KEY(intervento)
     ); 
-
-	# esempio
-	#CALL stimamuro(@intervento);
-    #UPDATE interventi
-    #SET intervento = @intervento WHERE tipologia = 'muri';
     
 		
 END $$

@@ -2,6 +2,7 @@
 
 USE SmartBuildings;
 
+-- Popolamento areagreografica
 INSERT INTO `AreaGeografica` (`nome`) VALUES
 ('Garfagna-Lunigiana'),
 ('Chianti'),
@@ -9,6 +10,7 @@ INSERT INTO `AreaGeografica` (`nome`) VALUES
 ('Alto Adige'),
 ('Porto Cervo');
 
+-- Popolamento turno
 INSERT INTO `Turno`(`ora_inizio`, `ora_fine`, `giorno`, `mansione`) VALUES 
 ('09:00:00', '13:00:00', '2022-08-01', 'Imbiancamento parete'),
 ('14:00:00', '18:00:00', '2022-08-01', 'Installazione porte e finestre'),
@@ -21,6 +23,7 @@ INSERT INTO `Turno`(`ora_inizio`, `ora_fine`, `giorno`, `mansione`) VALUES
 ('09:30:00', '13:30:00', '2022-08-05', 'Rifacimento tetto'),
 ('14:00:00', '18:00:00', '2022-08-05', 'Installazione lucernari');
 
+-- Popolamento calamità
 INSERT INTO `Calamita`(`tipo`) VALUES 
 ('Incendio'),
 ('Terremoto'),
@@ -29,6 +32,7 @@ INSERT INTO `Calamita`(`tipo`) VALUES
 ('Eruzione vulcanica'),
 ('Frana');
 
+-- Popolamento balcone
 INSERT INTO `Balcone`(`lunghezza`, `larghezza`, `altezza`, `altezza_ringhiera`) VALUES
 (90, 230, 10, 110),
 (95, 240, 8, 100),
@@ -47,6 +51,7 @@ INSERT INTO `Balcone`(`lunghezza`, `larghezza`, `altezza`, `altezza_ringhiera`) 
 (230, 180, 9, 110),
 (125, 300, 12, 80);
 
+-- Popolamento alveolatura
 INSERT INTO `Alveolatura` (`nome`, `descrizione`, `materiale_riempimento`) VALUES
 ('Alveotherm MO 390', '17 file di camere', NULL),
 ('Alveotherm A250 07', '7 file di camere', NULL),
@@ -54,7 +59,7 @@ INSERT INTO `Alveolatura` (`nome`, `descrizione`, `materiale_riempimento`) VALUE
 ('Biopor 35', 'Certificato doppia posa', 'stucco'), -- isolante
 ('Forata F200', '4 file di camere', 'stucco'); -- isolante
 
--- Inserimento materiali generici
+-- Popolamento materiali generici
 CALL valorizzazioneMateriale ('Sbarra di acciaio - sa1', 17892, 'SteelMaster', 120, 10, 6, 'robusta, resistente', 0.70, 'k', CURRENT_DATE(), 82, 'grigio');
 CALL valorizzazioneMateriale ('Sbarra di acciaio - sa2', 17897, 'SteelMaster', 180, 12, 8, 'robusta, resistente', 0.90, 'k', CURRENT_DATE(), 76, 'grigio');
 CALL valorizzazioneMateriale ('Marmo B', 18462, 'CarraiaMarble', 20, 20, 3, 'lucida, resistente', 50.25, 'mq', CURRENT_DATE(), 90, 'bianco');
@@ -66,7 +71,7 @@ CALL valorizzazioneMateriale ('Granito liscio', 12729, 'GranitePro', 120, 10, 6,
 CALL valorizzazioneMateriale ('Cemento a presa rapida', 11091, 'CemexMaker', 0, 0, 0, 'polvere', 0.20, 'kg', CURRENT_DATE(), 190, 'grigio');
 CALL valorizzazioneMateriale ('Cemento bianco', 11092, 'CemexMaker', 0, 0, 0, 'polvere', 0.35, 'kg', CURRENT_DATE(), 110, 'bianco');
 
--- Inserimento mattoni
+-- Popolamento mattoni
 CALL valorizzazioneMateriale ('Mattone - L', 12781, 'SuperBricks', 20, 8, 12, 'versatile, resistente', 30, 'mq', CURRENT_DATE(), 120, 'rosso');
 SELECT M.`ID` INTO @id
 FROM Materiale M
@@ -115,7 +120,7 @@ FROM Materiale M
 WHERE M.`nome` = 'Mattone vetrocemento'; 
 INSERT INTO `Mattone` VALUES (@id, 'Vetro', NULL);
 
--- Inserimento pietre
+-- Popolamento pietre
 CALL valorizzazioneMateriale ('Cubo in porfido', 14111, 'PorphyryErs', 4, 6, 6, 'ruvido', 14, 'mq', CURRENT_DATE(), 92, 'marrone-grigio');
 SELECT M.`ID` INTO @id
 FROM Materiale M
@@ -134,7 +139,7 @@ FROM Materiale M
 WHERE M.`nome` = 'Blocco in arenaria'; 
 INSERT INTO `Pietra` VALUES (@id, 'pietra serena - grana fine', 0.22, 160, 'mista - casuale');
 
--- Inserimento intonaco
+-- Popolamento intonaco
 CALL valorizzazioneMateriale ('Intonaco C', 14117, 'PlasterPros', 0, 0, 0, 'liscio', 14, 'mq', CURRENT_DATE(), 285, 'bianco');
 SELECT M.`ID` INTO @id
 FROM Materiale M
@@ -165,7 +170,7 @@ FROM Materiale M
 WHERE M.`nome` = 'Intonaco T'; 
 INSERT INTO `Intonaco` VALUES (@id, 0.3, 'per tappezzeria');
 
--- Inserimento parquet
+-- Popolamento parquet
 CALL valorizzazioneMateriale ('Legno massello', 15001, 'WoodMasters', 7, 42, 1, 'resistente', 30, 'mq', CURRENT_DATE(), 90, 'marrone');
 SELECT M.`ID` INTO @id
 FROM Materiale M
@@ -190,7 +195,7 @@ FROM Materiale M
 WHERE M.`nome` = 'Legno di rovere'; 
 INSERT INTO `Parquet` VALUES (@id, 'ungherese chiusa');
 
--- Inserimento piastrelle
+-- Popolamento piastrelle
 CALL valorizzazioneMateriale ('Piastrelle zephyr', 15015, 'NovoCeram', 30, 30, 6, 'fragile', 9, 'mq', CURRENT_DATE(), 118, 'oro');
 SELECT M.`ID` INTO @id
 FROM Materiale M
@@ -215,7 +220,7 @@ FROM Materiale M
 WHERE M.`nome` = 'Piastrelle performance'; 
 INSERT INTO `Piastrella` VALUES (@id, 0.5, 'Colore unico', 0);
 
--- Inserimento lavoratori
+-- Popolamento lavoratori
 INSERT INTO `Lavoratore` (`CF`, `nome`, `cognome`, `retribuzione_oraria`, `tipo`) VALUES 
 ('MRORSI97M09D612B', 'Mario', 'Rossi', 8.7, 'semplice'),
 ('VRILII99D612I', 'Luigi', 'Verdi', 8.4, 'semplice'),
@@ -228,7 +233,7 @@ INSERT INTO `Lavoratore` (`CF`, `nome`, `cognome`, `retribuzione_oraria`, `tipo`
 ('RMOMRO643S102H', 'Romano', 'Marroni', 8.1, 'semplice'),
 ('UBRBLU456D612D', 'Umberto', 'Blu', 11.6, 'responsabile');
 
--- Inserimento rischi
+-- Popolamento rischi
 INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES 
 (1, `Terremoto`, 8),
 (1, 'Frana', 10),
@@ -238,12 +243,12 @@ INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES
 (3, 'Incendio', 9),
 (4, 'Alluvione', 6);
 
--- Inserimento edifici
+-- Popolamento edifici
 INSERT INTO `Edificio` (`isFinito`, `tipologia`, `stato`, `area_geografica`) VALUES 
 (1, 'Palazzo', 100, 1),
 (0, 'Villetta a schiera', 75, 5);
 
--- Inserimento piani 
+-- Popolamento piani 
 INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edificio`) VALUES 
 (1, 360, NULL, NULL, 1),
 (2, 360, NULL, NULL, 1),
@@ -252,7 +257,7 @@ INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edific
 (2, 380, NULL, NULL, 2),
 (3, 410, 70, 360, 2);
 
--- Inserimento vani
+-- Popolamento vani
 INSERT INTO `Vano` (`edificio`, `piano`, `lunghezza`, `larghezza`, `funzione`, `parquet`, `piastrella`) VALUES 
 (1, 1, 400, 300, 'Cucina', NULL, 4),
 (1, 1, 290, 350, 'Sala da pranzo', NULL, 4),
@@ -285,7 +290,7 @@ INSERT INTO `Vano` (`edificio`, `piano`, `lunghezza`, `larghezza`, `funzione`, `
 (2, 3, 405, 410, 'Camera da letto', NULL, 2),
 (2, 3, 315, 310, 'Soggiorno', 2, NULL);
 
--- Inserimento pareti
+-- Popolamento pareti
 INSERT INTO `Parete` (`orientamento`, `angolo`, `id_parete_vano`, `mattone`, `vano`, `pietra`, `lunghezza`) VALUES 
 ('N', '90', 1, 2, 1, NULL, 300),
 ('E', '90', 2, 2, 1, NULL, 220),
@@ -377,7 +382,7 @@ INSERT INTO `Parete` (`orientamento`, `angolo`, `id_parete_vano`, `mattone`, `va
 ('W', '90', 4, 2, 15, NULL, 200),
 (NULL, NULL, 5, 2, 15, NULL, NULL);
 
--- Inserimenti balcone-vano
+-- Popolamento balcone vano
 INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES 
 (1, 2),
 (2, 5),
@@ -386,7 +391,7 @@ INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES
 (12, 11),
 (16, 15);
 
--- Inserimenti aree colpita
+-- Popolamento area colpita
 INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES 
 (1, 1, CURRENT_TIMESTAMP(), 6),
 (3, 1, CURRENT_TIMESTAMP(), 2),
@@ -399,7 +404,7 @@ INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES
 (4, 5, CURRENT_TIMESTAMP, 5),
 (3, 6, CURRENT_TIMESTAMP(), 4);
 
--- Inserimenti punti di accesso
+-- Popolamento punti di accesso
 INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `tipo`, `apertura`, `altezza_chiave`, `parete`) VALUES
 (65, 8, 200, 15, 'Porta', 1, NULL, 22),
 (70, 10, 210, 50, 'Porta', 1, NULL, 13),
@@ -420,7 +425,7 @@ INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_
 (130, 13, 260, 15, 'Arco', NULL, NULL, 17),
 (115, 13, 260, 10, 'Arco', NULL, NULL, 25);
 
--- Inserimento finestre 
+-- Popolamento finestre 
 INSERT INTO `Finestra` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `altezza_da_pavimento`, `orientamento`, `parete`) VALUES 
 (40, 8, 45, 30, 175, 'N', 1),
 (60, 10, 40, 40, 185, 'W', 7), 
@@ -433,8 +438,184 @@ INSERT INTO `Finestra` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `
 (50, 8, 60, 80, 160, 'NW', 16), 
 (45, 9, 30, 70, 165, 'N', 48); 
 
--- Inserimento progetti edilizi
+-- Popolamento progetti edilizi
 INSERT INTO `ProgettoEdilizio` (`codice`, `tipologia`, `data_presentazione`, `data_approvazione`, `data_inizio`, `data_stima_fine`, `data_fine_effettiva`, `edificio`) VALUES 
-(02112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(), CURRENT_DATE() + INTERVAL 12 DAY, CURRENT_DATE() + INTERVAL 30 DAY, CURRENT_DATE() + INTERVAL 30 DAY, 2), 
-(01112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 14 DAY, CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(),  CURRENT_DATE() + INTERVAL 14 DAY, CURRENT_DATE() + INTERVAL 18 DAY, 1),
-(29102022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 21 DAY, CURRENT_DATE() - INTERVAL 12 DAY, CURRENT_DATE() - INTERVAL 5 DAY, CURRENT_DATE() + INTERVAL 4 DAY, CURRENT_DATE() + INTERVAL 7 DAY, 2);
+(02112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(), CURRENT_DATE() + INTERVAL 12 DAY, CURRENT_DATE() + INTERVAL 30 DAY, CURRENT_DATE() + INTERVAL 30 DAY, 2), -- ristrutturazione bagno
+(01112022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 14 DAY, CURRENT_DATE() - INTERVAL 7 DAY, CURRENT_DATE(),  CURRENT_DATE() + INTERVAL 14 DAY, CURRENT_DATE() + INTERVAL 18 DAY, 1), -- ristrutturazione bagno
+(29102022, 'Ristrutturazione', CURRENT_DATE() - INTERVAL 21 DAY, CURRENT_DATE() - INTERVAL 12 DAY, CURRENT_DATE() - INTERVAL 5 DAY, CURRENT_DATE() + INTERVAL 4 DAY, CURRENT_DATE() + INTERVAL 7 DAY, 2); -- cappotto, ripavimentazione
+
+-- Popolamento stadi di avanzamento
+INSERT INTO `StadioDiAvanzamento` (`data_inizio`, `data_stima_fine`, `data_fine_effettiva`, `descrizione`, `progetto_edilizio`) VALUES 
+(CURRENT_DATE() + INTERVAL 30 DAY, CURRENT_DATE() + INTERVAL 32 DAY, CURRENT_DATE() + INTERVAL 32 DAY, 'Preparazione', 1),
+(CURRENT_DATE() + INTERVAL 33 DAY, CURRENT_DATE() + INTERVAL 35 DAY, CURRENT_DATE() + INTERVAL 35 DAY, 'Inizio', 1),
+(CURRENT_DATE() + INTERVAL 36 DAY, CURRENT_DATE() + INTERVAL 38 DAY, CURRENT_DATE() + INTERVAL 38 DAY, 'Medio termine ', 1),
+(CURRENT_DATE() - INTERVAL 5 DAY, CURRENT_DATE() - INTERVAL 4 DAY, CURRENT_DATE() - INTERVAL 3 DAY, 'Preparazione', 3),
+(CURRENT_DATE() - INTERVAL 2 DAY, CURRENT_DATE(), CURRENT_DATE(), 'Inizio', 3),
+(CURRENT_DATE() + INTERVAL 1 DAY, CURRENT_DATE() + INTERVAL 3 DAY, CURRENT_DATE() + INTERVAL 3 DAY, 'Medio termine', 3),
+(CURRENT_DATE() + INTERVAL 4 DAY, CURRENT_DATE() + INTERVAL 8 DAY, CURRENT_DATE + INTERVAL 7 DAY, 'Conclusione', 3),
+(CURRENT_DATE() + INTERVAL 8 DAY, CURRENT_DATE() + INTERVAL 12 DAY, CURRENT_DATE + INTERVAL 13 DAY, 'Controllo', 3),
+(CURRENT_DATE(), CURRENT_DATE() + INTERVAL 3 DAY, CURRENT_DATE() + INTERVAL 5 DAY, 'Preparazione', 2),
+(CURRENT_DATE() + INTERVAL 5 DAY, CURRENT_DATE() + INTERVAL 7 DAY, CURRENT_DATE() + INTERVAL 7 DAY, 'Inizio', 2);
+
+-- Popolamento lavori progetto edilizio
+INSERT INTO `LavoroProgettoEdilizio` (`tipologia`, `isCompleto`, `stadio`) VALUES 
+('Sopralluogo e raccoglimento materiale', 0, 1),
+('Sopralluogo e raccoglimento materiale', 1, 2),
+('Sopralluogo e raccoglimento materiale', 0, 3), 
+('Rimozione precedenti sanitari', 0, 1), 
+('Rimozione piastrelle pavimento', 1, 1),
+('Rifacimento condotti', 0, 1),
+('Posizionamento piastrelle e sanitari', 0, 1),
+('Posizionamento tasselli e collante', 1, 3), 
+('Posizionamento pannelli isolanti', 0, 3), 
+('Rimozione pavimento', 0, 3),
+('Rifacimento solaio', 1, 3), 
+('Applicazione adesivo rasante', 0, 3), 
+('Rivestimento facciata', 0, 3), 
+('Controllo della qualità del solaio', 1, 3), 
+('Controllo efficienza cappotto', 0, 3), 
+('Sopralluogo e raccoglimento materiale', 0, 2), 
+('Sopralluogo e raccoglimento materiale', 1, 2); 
+
+-- Popolamento partecipazione lavoratore a lavoro progetto edilizio
+INSERT INTO `PartecipazioneLavoratoreLavoro` (`lavoratore`, `lavoro`) VALUES 
+('MRORSI97M09D612B', 1),
+('MRORSI97M09D612B', 2),
+('MRORSI97M09D612B', 3),
+('VRILII99D612I', 2),
+('VRILII99D612I', 3),
+('VRILII99D612I', 5),
+('FACGAL85P600D', 1),
+('FACGAL85P600D', 4),
+('FACGAL85P600D', 12),
+('MRANRI92L611P', 14),
+('MRANRI92L611P', 5),
+('UGOAAN94K032L', 16),
+('UGOAAN94K032L', 15),
+('UBRBLU456D612D', 17),
+('UBRBLU456D612D', 11),
+('RMOMRO643S102H', 13),
+('RMOMRO643S102H', 14);
+
+-- Popolamento per supervisione lavoro
+INSERT INTO `SupervisioneLavoro` (`lavoratore`, `lavoro`) VALUES
+('FACGAL85P600D', 1),
+('FACGAL85P600D', 5),
+('FACGAL85P600D', 8),
+('VOATRH89S612P', 7),
+('VOATRH89S612P', 9),
+('VOATRH89S612P', 12),
+('MRANRI92L611P', 2),
+('MRANRI92L611P', 3),
+('MRANRI92L611P', 4),
+('UBRBLU456D612D', 6),
+('UBRBLU456D612D', 10),
+('UBRBLU456D612D', 11),
+('UBRBLU456D612D', 13);
+
+-- Popolamento lavoratore svolgimento turno
+INSERT INTO `SvolgimentoTurno` (`lavoratore`, `ora_inizio`, `ora_fine`, `giorno`) VALUES 
+(1, '09:00:00', '13:00:00', '2022-08-01'),
+(1, '14:00:00', '18:00:00', '2022-08-01'),
+(2, '08:00:00', '14:00:00', '2022-08-02'),
+(2, '15:00:00', '18:00:00', '2022-08-02'),
+(6, '14:00:00', '19:00:00', '2022-08-03'),
+(6, '09:30:00', '13:30:00', '2022-08-05'),
+(7, '14:00:00', '19:00:00', '2022-08-03'),
+(7, '09:30:00', '13:30:00', '2022-08-05'),
+(8, '14:00:00', '19:00:00', '2022-08-03'),
+(8, '09:30:00', '13:30:00', '2022-08-05'),
+(10, '09:00:00', '13:00:00', '2022-08-03'),
+(10, '09:30:00', '13:30:00', '2022-08-05'),
+(5, '13:00:00', '17:30:00', '2022-08-04'),
+(5, '14:00:00', '18:00:00', '2022-08-05'); 
+
+-- Popolamento lavoratore dirige turno
+INSERT INTO `LavoratoreDirigeTurno` (`capo_turno`, `ora_inizio`, `ora_fine`, `giorno`, `num_lavoratori_monitorabili`) VALUES
+('VOATRH89S612P', '09:00:00', '13:00:00', '2022-08-01', 5),
+('VOATRH89S612P', '14:00:00', '18:00:00', '2022-08-01', 5),
+('UBRBLU456D612D', '08:00:00', '14:00:00', '2022-08-02', 7),
+('MRANRI92L611P', '15:00:00', '18:00:00', '2022-08-02', 5),
+('MRANRI92L611P', '14:00:00', '19:00:00', '2022-08-03', 5),
+('FACGAL85P600D', '09:30:00', '13:30:00', '2022-08-05', 6);
+
+-- Popolamento strato intonaco
+-- intonaco 22-26
+INSERT INTO `StratoIntonaco` (`strato`, `parete`, `intonaco`) VALUES 
+(1, 1, 22),
+(2, 1, 22),
+(3, 1, 22),
+(1, 2, 25),
+(2, 2, 25),
+(3, 2, 25),
+(1, 13, 22),
+(2, 13, 22),
+(3, 13, 22),
+(1, 47, 22),
+(2, 47, 24),
+(3, 47, 24),
+(1, 71, 22),
+(2, 71, 24),
+(3, 71, 26),
+(1, 26, 23),
+(2, 26, 23),
+(3, 26, 25);
+
+-- Popolamento sensori 
+INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `tipo`, `soglia`, `unita_di_misura`, `parete`, `vano`) VALUES 
+(40, 180, 0, 'fessurimetro', , 'mm', 12, NULL), 
+(NULL, 0, 0, 'accelerometro', , 'mm/s^2', NULL, 8), 
+(20, 15, 0, 'giroscopio', , 'Nmm', NULL, 6), 
+(60, 175, 0, 'termometro', , '°C', 23, NULL), 
+(70, 180, 0, 'termometro', , '°C', 7, NULL), 
+(40, 200, 0, 'igrometro', , 'g/m^3', 45, NULL), 
+(30, 210, 1, 'pluviometro', , 'mm', NULL, NULL), 
+(NULL, 200, 1, 'pluviometro', , 'mm', NULL, NULL), 
+(35, 190, 0, 'igrometro', , 'g/m^3', 33, NULL), 
+(NULL, 220, 1, 'pluviometro', , 'mm', NULL, NULL), 
+(60, 5, 1, 'igrometro', , 'g/m^3', 72, NULL), 
+(40, 10, 1, 'igrometro', , 'g/m^3', 70, NULL), 
+(30, 185, 0, 'fessurimetro', , 'mm', 57, NULL), 
+(30, 140, 0, 'giroscopio', , 'Nmm', NULL, 12), 
+(40, 100, 0, 'giroscopio', , 'Nmm', NULL, 9), 
+(20, 10, 0, 'accelerometro', , 'mm/s^2', NULL, 3), 
+(20, 175, 0, 'fessurimetro', , 'mm', 30, NULL), 
+(35, 120, 1, 'termometro', , '°C', 21, NULL), 
+(45, 175, 0, 'fessurimetro', , 'mm', 69, NULL), 
+(50, 160, 1, 'termometro', , '°C', 14, NULL);
+
+/*
+	Genera una misura relativamente ad un sensore.
+*/
+DROP PROCEDURE IF EXISTS generaMisura; 
+DELIMITER $$
+CREATE PROCEDURE generaMisura (_sensore INT)
+BEGIN
+	DECLARE ts TIMESTAMP DEFAULT NULL;
+    DECLARE tipo TEXT DEFAULT '';
+    DECLARE num INT DEFAULT 1; 
+
+	-- controllo se il sensore è presente
+	IF NOT EXISTS (SELECT 1 FROM `Sensore` S WHERE S.`ID` = _sensore)
+	THEN 
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] Sensore non presente';
+	END IF;
+    
+    SELECT S.`tipo` INTO tipo
+    FROM `Sensore` S
+    WHERE S.`ID` = _sensore;
+    
+    IF(tipo = 'accelerometro' OR tipo = 'giroscopio') 
+    THEN 
+		SET num = 3; 
+	END IF;
+    
+    -- creo un timestamp "randomico"
+    -- converte la data iniziale in un timestamp unix e aggiunge un valore random tra 0 secondi e +2 anni poi lo converte nuovamente in timestamp
+    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-25-12 00:00:00') + FLOOR(0 + (RAND() * 63072000))); 
+    
+END $$ 
+DELIMITER ;
+
+-- Popolamento misurazioni
