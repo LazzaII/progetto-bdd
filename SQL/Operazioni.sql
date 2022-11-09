@@ -376,7 +376,7 @@ BEGIN
 		SELECT COUNT(1) AS numCalamità, AG.`nome`, AG.`ID`
 		FROM `AreaGeografica` AG
 		JOIN `AreaColpita` AC ON AC.`area` = AG.`ID`
-		GROUP BY AC`area`
+		GROUP BY AC.`area`
 	)
 	SELECT AM.`nome`, AM.`ID` INTO area, tmpId
 	FROM areaMaggiore AM
