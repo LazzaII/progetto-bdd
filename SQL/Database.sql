@@ -511,8 +511,8 @@ CREATE INDEX `index_giorno2` ON `SvolgimentoTurno` (`giorno`);
 
 CREATE TABLE IF NOT EXISTS `Sensore` (
 	`ID` INT NOT NULL AUTO_INCREMENT,
-	`distanza_da_sx` DOUBLE UNSIGNED, 
-    `altezza_da_pavimento` DOUBLE UNSIGNED NOT NULL,
+	`distanza_da_sx` DOUBLE UNSIGNED NOT NULL, 
+    `altezza_da_pavimento` DOUBLE NOT NULL,
 	`isEsterno` TINYINT NOT NULL CHECK(`isEsterno` IN (0, 1)),
     `tipo` VARCHAR(45) NOT NULL, 
 	`soglia` DOUBLE NOT NULL, 
