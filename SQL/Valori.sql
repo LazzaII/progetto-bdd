@@ -244,9 +244,9 @@ INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES
 (4, 'Alluvione', 6); 
 
 -- Popolamento edifici
-INSERT INTO `Edificio` (`isFinito`, `tipologia`, `stato`, `area_geografica`) VALUES 
-(1, 'Palazzo', 100, 1),
-(0, 'Villetta a schiera', 75, 5);
+INSERT INTO `Edificio` (`tipologia`, `stato`, `area_geografica`) VALUES 
+('Palazzo', 100, 1),
+('Villetta a schiera', 75, 5);
 
 -- Popolamento piani 
 INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edificio`) VALUES 
