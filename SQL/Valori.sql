@@ -175,7 +175,7 @@ CALL valorizzazioneMateriale ('Legno massello', 15001, 'WoodMasters', 7, 42, 1, 
 SELECT M.`ID` INTO @id
 FROM Materiale M
 WHERE M.`nome` = 'Legno massello'; 
-INSERT INTO `Parquet` VALUES (@id, 'spina di pesce');
+INSERT INTO `Parquet` VALUES (@id, 'lisca di pesce');
 
 CALL valorizzazioneMateriale ('Legno di quercia', 15002, 'WoodMasters', 6.5, 40, 1, 'resistente', 42, 'mq', CURRENT_DATE(), 90, 'marrone');
 SELECT M.`ID` INTO @id
