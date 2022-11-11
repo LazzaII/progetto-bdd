@@ -96,7 +96,8 @@ CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a +
   `lunghezza` DOUBLE UNSIGNED NOT NULL,
   `larghezza` DOUBLE UNSIGNED NOT NULL,
   `altezza` DOUBLE UNSIGNED NOT NULL,
-  `altezza_ringhiera` TINYINT UNSIGNED NOT NULL,
+  `altezza_ringhiera` DOUBLE UNSIGNED NOT NULL,
+  `altezza_da_terra` DOUBLE UNSIGNED,
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
