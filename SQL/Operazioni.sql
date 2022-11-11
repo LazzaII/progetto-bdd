@@ -351,6 +351,23 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- Trigger che in automatico inserisce l'altezza da terra sfruttando la procedura
+DROP TRIGGER IF EXISTS inserimentoAltezzaBalcone;
+DELIMITER $$
+CREATE TRIGGER inserimentoAltezzaBalcone
+AFTER INSERT ON `Balcone`
+FOR EACH ROW
+BEGIN 
+	# MAIN
+    CALL altezzaBalcone(NEW.`ID`, @altezza);
+    
+    UPDATE `Balcone` B 
+    SET B.`altezza_da_terra` = @altezza 
+    WHERE B.`ID` = NEW.`ID`;
+
+END $$
+DELIMITER ;
+
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
 -- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute    --

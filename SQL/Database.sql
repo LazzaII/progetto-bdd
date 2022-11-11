@@ -8,7 +8,7 @@ CREATE SCHEMA SmartBuildings DEFAULT CHARACTER SET utf8;
 USE SmartBuildings;
 
 SET FOREIGN_KEY_CHECKS = 0; -- per togliere il controllo sulla creazione delle FK iniziale (1 = controllo, 0 = non controllo)
-SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule dei trigger
+SET GLOBAL EVENT_SCHEDULER = ON; -- per avviare lo schedule degli event
 
 -- ------------------------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `Balcone` ( -- i balconi possono essere in comune a +
   `larghezza` DOUBLE UNSIGNED NOT NULL,
   `altezza` DOUBLE UNSIGNED NOT NULL,
   `altezza_ringhiera` DOUBLE UNSIGNED NOT NULL,
-  `altezza_da_terra` DOUBLE UNSIGNED,
+  `altezza_da_terra` DOUBLE UNSIGNED DEFAULT 0,
   PRIMARY KEY (`ID`)
 ) ENGINE = InnoDB;
 
