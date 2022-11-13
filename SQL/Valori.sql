@@ -616,20 +616,20 @@ BEGIN
     IF(tipo = 'accelerometro' OR tipo = 'giroscopio') 
     THEN 
 		-- genera un numero random tra soglia(max) e 0(min)
-		SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val1;
-        SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val2;
-        SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val3;
+		SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val1;
+        SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val2;
+        SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val3;
 
         SET percentualeLivello = ROUND(SQRT(val1*val1+val2*val2+val3*val3)/soglia, 2)*100;
 	ELSE 
-		SELECT ROUND(RAND()*(soglia*1.5+1), 2) INTO val1;
+		SELECT ROUND(RAND()*(soglia+1), 2) INTO val1;
 
         SET percentualeLivello = ROUND(val1/soglia, 2)*100;
 	END IF;
     
     -- creo un timestamp "randomico"
     -- converte la data iniziale in un timestamp unix e aggiunge un valore random tra 0 secondi e +2 mesi poi lo converte nuovamente in timestamp
-    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/24))); 
+    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))); 
 
     -- identifico il livello
     IF (percentualeLivello >= 100) THEN
@@ -666,7 +666,7 @@ BEGIN
     OPEN cur_sensori;
     WHILE finito = 0 DO
         FETCH cur_sensori INTO sensore;
-        WHILE contatore < 20 DO
+        WHILE contatore < 200 DO
             CALL generaMisura(sensore);
             SET contatore = contatore + 1;
         END WHILE;
