@@ -1,30 +1,20 @@
 USE SmartBuildings;
 
-DROP PROCEDURE IF EXISTS checkUmidità;
+-- =============================================================================================================== --
+-- 												FUNZIONI DI UTILITÀ       		  							       --
+-- =============================================================================================================== --
+
+
+-- =============================================================================================================== --
+-- 											  FINE FUNZIONI UTILITÀ        		  								   --
+-- =============================================================================================================== --	
+
+DROP PROCEDURE IF EXISTS checkUmidita;
 DELIMITER $$
-CREATE PROCEDURE checkUmidità(IN _idEdificio INT, IN tipo VARCHAR(7) OUT stato TEXT)
+CREATE PROCEDURE checkUmidita(IN _idEdificio INT, IN tipo VARCHAR(7), OUT stato TEXT)
 BEGIN 
-    # VAR
-    DECLARE media DOUBLE DEFAULT 0;
-    DECLARE counter INT DEFAULT 0;
-
-    # MAIN
-    CASE
-        WHEN tipo = 'MURO'
-        THEN
-            SELECT 
-            FROM `Misurazione` M
-            JOIN `Sensore` S ON S.`ID` = M.`ID`
-            JOIN `Parete` P ON P.`ID` = S.`parete`
-            WHERE 
-        WHEN tipo = 'PARQUET'
-            SELECT 
-            FROM `Misurazione` M
-            JOIN `Sensore` S ON S.`ID` = M.`ID`
-            JOIN `Vano` V ON V.`ID` = V.`vano`
-        THEN
-
-
+    
+	
 END $$
 DELIMITER ;
 

@@ -3,8 +3,8 @@ USE SmartBuildings;
 -- =============================================================================================================== --
 -- 												FUNZIONI DI UTILITÀ       		  							       --
 -- Funzione per il calcolo del costo giornaliero della manodopera, tiene conto della maggiorazione per gli         --
--- straordinari 	
--- =============================================================================================================== --																							   --
+-- straordinari 																								   --
+-- =============================================================================================================== --
 DROP FUNCTION IF EXISTS costoManodoperaGiornaliera;
 DELIMITER $$
 CREATE FUNCTION costoManodoperaGiornaliera (minutiLavorati INT, retribuzione DOUBLE)
@@ -384,11 +384,59 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
--- Evento che aggiorna lo stato dell'edificio, viene considerato lo stato di partenza e le misurazioni avvenute    --
--- in un certo lasso di tempo per aggiornare lo stato dell'edificio, oltre ad aggiornare il valore numero dello    -- 
--- stato rende in output un valore testuale per indicarne lo stato. [Ottime condizioni, Buone, Critiche etc].      --
+-- Procedura che dato un edificio un edificio in input ne rende tutte le informazioni necessarie. Calcola la   	   --
+-- superficie, il volume, il numero di vani, la superficie media e il volume medio. Inoltre rende la tipologia e   --
+-- lo stato dell'edificio.
 -- =============================================================================================================== --
+DROP PROCEDURE IF EXISTS infoEdificio;
+DELIMITER $$
+CREATE PROCEDURE infoEdificio(IN _idEdificio INT, OUT sup DOUBLE, OUT volume DOUBLE, 
+							  OUT vani INT, OUT supMedia DOUBLE, OUT volMedio DOUBLE,
+                              OUT stato VARCHAR(6), OUT tipolgia VARCHAR(45))
+BEGIN
+	# MAIN
+    IF NOT EXISTS (SELECT 1 FROM `Edificio` E WHERE E.`ID` = _idEdificio)
+	THEN
+		SIGNAL SQLSTATE '45000' 
+		SET MESSAGE_TEXT = '[ERROR] edificio inserito non presente';
+	END IF;
+    
+    SELECT SUM(V.`larghezza` * V.`lunghezza`), SUM(V.`larghezza` * V.`lunghezza` * P.`altezza`) INTO sup, volume
+    FROM `Edificio` E 
+    JOIN `Piano` P ON P.`edificio` = E.`ID`
+    JOIN `Vano` V ON V.`piano` = P.`numero` AND V.`edificio` =  P.`edificio`
+    WHERE E.`ID` = _idEdificio
+    GROUP BY E.`ID`;
+    
+    SET @statoN = 0;
+    
+    SELECT COUNT(1), E.`tipologia`, E.`stato` INTO vani, tipolgia, @statoN
+    FROM `Edificio` E 
+    JOIN `Piano` P ON P.`edificio` = E.`ID`
+    JOIN `Vano` V ON V.`piano` = P.`numero` AND V.`edificio` =  P.`edificio`
+    WHERE E.`ID` = _idEdificio
+    GROUP BY E.`ID`;
+    
+    SET supMedia = sup / vani;
+    SET volMedio = volume / vani;
+    
+    CASE 
+		WHEN @statoN >= 75 
+			THEN SET stato = "ottimo";
+        WHEN @statoN BETWEEN 74 AND 50
+			THEN SET stato = "buono";
+        WHEN stato BETWEEN 49 AND 25
+			THEN SET stato = "critico";
+        WHEN stato <= 25 
+			THEN SET stato = "da demolire";
+	END CASE;
+        
+END $$
+DELIMITER ;
 
+-- Test
+CALL infoEdificio(1, @sup, @vol, @vani, @supM, @volM, @stato, @tipo);
+SELECT @sup, @vol, @vani, @supM, @volM, @tipo, @stato;
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --
