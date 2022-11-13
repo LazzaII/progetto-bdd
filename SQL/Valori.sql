@@ -564,15 +564,15 @@ INSERT INTO `StratoIntonaco` (`strato`, `parete`, `intonaco`) VALUES
 -- Popolamento sensori 
 INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `tipo`, `soglia`, `unita_di_misura`, `parete`, `vano`) VALUES 
 (40, 180, 0, 'fessurimetro', 50, 'mm', 12, NULL), 
-(NULL, 0, 0, 'accelerometro', 10, 'mm/s^2', NULL, 8), 
+(30, 0, 0, 'accelerometro', 10, 'mm/s^2', NULL, 8), 
 (20, 15, 0, 'giroscopio', 10, 'Nmm', NULL, 6), 
 (60, 175, 0, 'termometro', 55, '°C', 23, NULL), 
 (70, 180, 0, 'termometro', -10, '°C', 7, NULL), 
 (40, 200, 0, 'igrometro', 150, '%', 45, NULL), 
 (30, 210, 1, 'pluviometro', 300, 'mm', NULL, NULL), 
-(NULL, 200, 1, 'pluviometro', 280, 'mm', NULL, NULL), 
+(70, 200, 1, 'pluviometro', 280, 'mm', NULL, NULL), 
 (35, 190, 0, 'igrometro', 120, '%', 33, NULL), 
-(NULL, 220, 1, 'pluviometro', 310, 'mm', NULL, NULL), 
+(45, 220, 1, 'pluviometro', 310, 'mm', NULL, NULL), 
 (60, 5, 1, 'igrometro', 120, '%', 72, NULL), 
 (40, 10, 1, 'igrometro', 110, '%', 70, NULL), 
 (30, 185, 0, 'fessurimetro', 50, 'mm', 57, NULL), 
@@ -626,8 +626,8 @@ BEGIN
 	END IF;
     
     -- creo un timestamp "randomico"
-    -- converte la data iniziale in un timestamp unix e aggiunge un valore random tra 0 secondi e +2 anni poi lo converte nuovamente in timestamp
-    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000))); 
+    -- converte la data iniziale in un timestamp unix e aggiunge un valore random tra 0 secondi e +2 mesi poi lo converte nuovamente in timestamp
+    SET ts = FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/24))); 
 
     -- identifico il livello
     IF (percentualeLivello >= 100) THEN
@@ -664,7 +664,7 @@ BEGIN
     OPEN cur_sensori;
     WHILE finito = 0 DO
         FETCH cur_sensori INTO sensore;
-        WHILE contatore < 5 DO
+        WHILE contatore < 10 DO
             CALL generaMisura(sensore);
             SET contatore = contatore + 1;
         END WHILE;
