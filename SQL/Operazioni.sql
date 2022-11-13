@@ -325,7 +325,7 @@ DELIMITER :
 
 DROP PROCEDURE IF EXISTS altezzaBalcone();
 DELIMITER $$
-CREATE PROCEDURE altezzaBalcone(IN _idBalcone INT, OUT altezzaDaTerra INT)
+CREATE PROCEDURE altezzaBalcone(IN _idBalcone INT, OUT altezzaDaTerra DOUBLE)
 BEGIN
 	# VAR
 	DECLARE idEdificio INT DEFAULT NULL;
@@ -343,8 +343,10 @@ BEGIN
 	SELECT V.`edificio`, V.`piano` INTO idEdificio, numeroPiano
 	FROM `Balcone` B	
 	JOIN `BalconeVano` BV ON BV.`balcone` = B.`ID`
-	JOIN `Vano` V ON V.`ID` = BV.`vano`; -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
-
+	JOIN `Vano` V ON V.`ID` = BV.`vano` -- mi posso fermare a vano senza andare su piano perchè V.`piano` è la fk che rappresenta il numero di piano
+    WHERE B.`ID` = _idBalcone
+    LIMIT 1; 
+    
 	SELECT SUM(P.`altezza`) INTO altezzaDaTerra
 	FROM `Piano` P
 	WHERE P.`numero` < numeroPiano AND P.`edificio` = idEdificio;
@@ -352,19 +354,31 @@ END $$
 DELIMITER ;
 
 -- Trigger che in automatico inserisce l'altezza da terra sfruttando la procedura
-DROP TRIGGER IF EXISTS inserimentoAltezzaBalcone;
+DROP PROCEDURE IF EXISTS inserimentoAltezzaBalconi;
 DELIMITER $$
-CREATE TRIGGER inserimentoAltezzaBalcone
-AFTER INSERT ON `Balcone`
-FOR EACH ROW
+CREATE PROCEDURE inserimentoAltezzaBalconi()
 BEGIN 
-	# MAIN
-    CALL altezzaBalcone(NEW.`ID`, @altezza);
-    
-    UPDATE `Balcone` B 
-    SET B.`altezza_da_terra` = @altezza 
-    WHERE B.`ID` = NEW.`ID`;
+	# VAR
+    DECLARE finito INT DEFAULT 0;
+    DECLARE idBalcone INT DEFAULT 0;
+    DECLARE altezza DOUBLE DEFAULT 0;
 
+	# MAIN
+    DECLARE cur CURSOR FOR SELECT B.`ID` FROM `Balcone` B;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
+    
+    OPEN cur;
+    WHILE finito = 0 DO 
+		FETCH cur INTO idBalcone;
+        
+        CALL altezzaBalcone(idBalcone, altezza);
+    
+		UPDATE `Balcone` B 
+		SET B.`altezza_da_terra` = altezza 
+		WHERE B.`ID` = idBalcone;
+    END WHILE;
+    
+    CLOSE cur;
 END $$
 DELIMITER ;
 

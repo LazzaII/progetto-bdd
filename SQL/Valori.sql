@@ -32,25 +32,6 @@ INSERT INTO `Calamita`(`tipo`) VALUES
 ('Eruzione vulcanica'),
 ('Frana');
 
--- Popolamento balcone
-INSERT INTO `Balcone`(`lunghezza`, `larghezza`, `altezza`, `altezza_ringhiera`) VALUES
-(90, 230, 10, 110),
-(95, 240, 8, 100),
-(120, 190, 8, 90),
-(110, 220, 9, 95),
-(100, 170, 10, 115),
-(95, 200, 8, 100),
-(80, 210, 10, 95),
-(85, 160, 9, 100),
-(100, 200, 9, 115),
-(250, 180, 8, 100),
-(240, 230, 8, 95),
-(200, 170, 9, 105),
-(190, 160, 8, 90),
-(180, 150, 9, 105),
-(230, 180, 9, 110),
-(125, 300, 12, 80);
-
 -- Popolamento alveolatura
 INSERT INTO `Alveolatura` (`nome`, `descrizione`, `materiale_riempimento`) VALUES
 ('Alveotherm MO 390', '17 file di camere', NULL),
@@ -382,6 +363,25 @@ INSERT INTO `Parete` (`orientamento`, `angolo`, `id_parete_vano`, `mattone`, `va
 ('W', '90', 4, 2, 15, NULL, 200),
 (NULL, NULL, 5, 2, 15, NULL, NULL);
 
+-- Popolamento balcone
+INSERT INTO `Balcone`(`lunghezza`, `larghezza`, `altezza`, `altezza_ringhiera`) VALUES
+(90, 230, 10, 110),
+(95, 240, 8, 100),
+(120, 190, 8, 90),
+(110, 220, 9, 95),
+(100, 170, 10, 115),
+(95, 200, 8, 100),
+(80, 210, 10, 95),
+(85, 160, 9, 100),
+(100, 200, 9, 115),
+(250, 180, 8, 100),
+(240, 230, 8, 95),
+(200, 170, 9, 105),
+(190, 160, 8, 90),
+(180, 150, 9, 105),
+(230, 180, 9, 110),
+(125, 300, 12, 80);
+
 -- Popolamento balcone vano
 INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES 
 (1, 2),
@@ -390,6 +390,8 @@ INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES
 (3, 9),
 (12, 11),
 (16, 15);
+
+CALL inserimentoAltezzaBalconi();
 
 -- Popolamento area colpita
 INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES 
@@ -664,7 +666,7 @@ BEGIN
     OPEN cur_sensori;
     WHILE finito = 0 DO
         FETCH cur_sensori INTO sensore;
-        WHILE contatore < 10 DO
+        WHILE contatore < 20 DO
             CALL generaMisura(sensore);
             SET contatore = contatore + 1;
         END WHILE;
