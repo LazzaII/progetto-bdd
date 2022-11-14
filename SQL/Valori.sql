@@ -394,17 +394,17 @@ INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES
 CALL inserimentoAltezzaBalconi();
 
 -- Popolamento area colpita
-INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`) VALUES 
-(1, 1, CURRENT_TIMESTAMP(), 6),
-(3, 1, CURRENT_TIMESTAMP(), 2),
-(4, 2, CURRENT_TIMESTAMP(), 8),
-(1, 6, CURRENT_TIMESTAMP, 1),
-(2, 4, CURRENT_TIMESTAMP(), 7),
-(5, 3, CURRENT_TIMESTAMP(), 6),
-(2, 5, CURRENT_TIMESTAMP(), 2),
-(5, 4, CURRENT_TIMESTAMP(), 10),
-(4, 5, CURRENT_TIMESTAMP, 5),
-(3, 6, CURRENT_TIMESTAMP(), 4);
+INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`, `distanza_epicentro`) VALUES 
+(1, 1, CURRENT_TIMESTAMP(), 6, 40),
+(3, 1, CURRENT_TIMESTAMP(), 2, 20),
+(4, 2, CURRENT_TIMESTAMP(), 8, 12),
+(1, 6, CURRENT_TIMESTAMP, 1, 30),
+(2, 4, CURRENT_TIMESTAMP(), 7, 35),
+(5, 3, CURRENT_TIMESTAMP(), 6, 5),
+(2, 5, CURRENT_TIMESTAMP(), 2, 25),
+(5, 4, CURRENT_TIMESTAMP(), 10, 10),
+(4, 5, CURRENT_TIMESTAMP, 5, 20),
+(3, 6, CURRENT_TIMESTAMP(), 4, 15);
 
 -- Popolamento punti di accesso
 INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `tipo`, `apertura`, `altezza_chiave`, `parete`) VALUES

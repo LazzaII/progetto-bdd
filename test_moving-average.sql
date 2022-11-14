@@ -1,5 +1,16 @@
 USE SmartBuildings;
 
+# Per disabilitare "ONLY_FULL_GROUP_BY"
+# SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
+# SELECT @@sql_mode;
+
+CREATE TABLE MovingAverages (
+	sensore INT, 
+	ma1 DOUBLE,
+    ma7 DOUBLE,
+    ma30 DOUBLE
+);
+
 SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, M.`valoreY`, M.`valoreZ`, 
 			  ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
 				/ COUNT(M2.valoreX)

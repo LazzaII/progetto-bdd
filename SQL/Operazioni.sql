@@ -384,15 +384,15 @@ DELIMITER ;
 
 -- =============================================================================================================== --
 -- 													OPERATION 7        		  									   --
--- Procedura che dato un edificio un edificio in input ne rende tutte le informazioni necessarie. Calcola la   	   --
--- superficie, il volume, il numero di vani, la superficie media e il volume medio. Inoltre rende la tipologia e   --
--- lo stato dell'edificio.
+-- Procedura che dato un edificio in input ne rende tutte le informazioni necessarie. Calcola la superficie,       --
+-- il volume, il numero di vani, la superficie media e il volume medio. Inoltre rende la tipologia e   			   --
+-- lo stato dell'edificio.																						   --
 -- =============================================================================================================== --
 DROP PROCEDURE IF EXISTS infoEdificio;
 DELIMITER $$
 CREATE PROCEDURE infoEdificio(IN _idEdificio INT, OUT sup DOUBLE, OUT volume DOUBLE, 
 							  OUT vani INT, OUT supMedia DOUBLE, OUT volMedio DOUBLE,
-                              OUT stato VARCHAR(6), OUT tipolgia VARCHAR(45))
+                              OUT stato VARCHAR(11), OUT tipolgia VARCHAR(45))
 BEGIN
 	# MAIN
     IF NOT EXISTS (SELECT 1 FROM `Edificio` E WHERE E.`ID` = _idEdificio)

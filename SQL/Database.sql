@@ -174,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `calamita` INT NOT NULL, -- FK a calamità
     `timestamp` TIMESTAMP NOT NULL,
     `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
+    `distanza_epicentro` DOUBLE UNSIGNED NOT NULL, -- espressa in km
 	PRIMARY KEY (`area`, `calamita`, `timestamp`),
     FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`)
 			ON UPDATE CASCADE
