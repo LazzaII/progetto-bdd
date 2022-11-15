@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `Edificio` (
 		ON DELETE NO ACTION -- area geografica rimossa
 ) ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `index_area_geografica1` ON `Edificio` (`area_geografica`);
+CREATE INDEX `index_area_geografica1` ON `Edificio` (`area_geografica`);
 
 -- ------------------------------------------------------------------------------------------
 
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `AreaColpita` (
     `area` INT NOT NULL, -- FK a area geografica
     `calamita` INT NOT NULL, -- FK a calamità
     `timestamp` TIMESTAMP NOT NULL,
-    `gravita` INT NOT NULL CHECK (`gravita` BETWEEN 1 AND 10),
+    `gravita` DOUBLE UNSIGNED DEFAULT NULL,
     `distanza_epicentro` DOUBLE UNSIGNED NOT NULL, -- espressa in km
 	PRIMARY KEY (`area`, `calamita`, `timestamp`),
     FOREIGN KEY (`area`) REFERENCES `AreaGeografica` (`ID`)

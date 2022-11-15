@@ -218,16 +218,16 @@ INSERT INTO `Lavoratore` (`CF`, `nome`, `cognome`, `retribuzione_oraria`, `tipo`
 INSERT INTO `Rischio` (`area_geografica`, `tipo`, `coefficiente_rischio`) VALUES 
 (1, 'Terremoto', 8),
 (1, 'Frana', 10),
-(5, 'Tromba aria', 9),
+(5, 'Tromba d aria', 9),
 (5, 'Incendio', 2),
 (2, 'Frana', 8),
 (3, 'Incendio', 9),
-(4, 'Alluvione', 6); 
+(4, 'Terremoto', 6); 
 
 -- Popolamento edifici
 INSERT INTO `Edificio` (`tipologia`, `stato`, `area_geografica`) VALUES 
-('Palazzo', 100, 1),
-('Villetta a schiera', 75, 5);
+('Palazzo', 100, 4),
+('Villetta a schiera', 75, 4);
 
 -- Popolamento piani 
 INSERT INTO `Piano` (`numero`, `altezza`, `inclinazione`, `altezza_min`, `edificio`) VALUES 
@@ -392,19 +392,6 @@ INSERT INTO `BalconeVano` (`balcone`, `vano`) VALUES
 (16, 15);
 
 CALL inserimentoAltezzaBalconi();
-
--- Popolamento area colpita
-INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `gravita`, `distanza_epicentro`) VALUES 
-(1, 1, CURRENT_TIMESTAMP(), 6, 40),
-(3, 1, CURRENT_TIMESTAMP(), 2, 20),
-(4, 2, CURRENT_TIMESTAMP(), 8, 12),
-(1, 6, CURRENT_TIMESTAMP, 1, 30),
-(2, 4, CURRENT_TIMESTAMP(), 7, 35),
-(5, 3, CURRENT_TIMESTAMP(), 6, 5),
-(2, 5, CURRENT_TIMESTAMP(), 2, 25),
-(5, 4, CURRENT_TIMESTAMP(), 10, 10),
-(4, 5, CURRENT_TIMESTAMP, 5, 20),
-(3, 6, CURRENT_TIMESTAMP(), 4, 15);
 
 -- Popolamento punti di accesso
 INSERT INTO `PuntoDiAccesso` (`lunghezza`, `larghezza`, `altezza`, `distanza_da_sx`, `tipo`, `apertura`, `altezza_chiave`, `parete`) VALUES
@@ -676,3 +663,18 @@ BEGIN
 END $$ 
 DELIMITER ;
 CALL inserisciMisurazioni();
+
+-- Popolamento area colpita
+INSERT INTO `AreaColpita` (`area`, `calamita`, `timestamp`, `distanza_epicentro`) VALUES 
+(1, 1, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 40),
+(3, 1, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 20),
+(4, 2, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 12),
+(1, 6, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 30),
+(2, 4, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 35),
+(5, 3, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 5),
+(2, 5, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 25),
+(5, 4, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 10),
+(4, 5, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 20),
+(3, 6, FROM_UNIXTIME(UNIX_TIMESTAMP('2014-12-25 00:00:00') + FLOOR(0 + (RAND() * 63072000/12))), 15);
+
+CALL inserisciGravita();
