@@ -323,7 +323,7 @@ DELIMITER :
 -- Fallisce se il balcone inserito non è presente. 																   --
 -- =============================================================================================================== --
 
-DROP PROCEDURE IF EXISTS altezzaBalcone();
+DROP PROCEDURE IF EXISTS altezzaBalcone;
 DELIMITER $$
 CREATE PROCEDURE altezzaBalcone(IN _idBalcone INT, OUT altezzaDaTerra DOUBLE)
 BEGIN
@@ -435,8 +435,8 @@ END $$
 DELIMITER ;
 
 -- Test
-CALL infoEdificio(1, @sup, @vol, @vani, @supM, @volM, @stato, @tipo);
-SELECT @sup, @vol, @vani, @supM, @volM, @tipo, @stato;
+-- CALL infoEdificio(1, @sup, @vol, @vani, @supM, @volM, @stato, @tipo);
+-- SELECT @sup, @vol, @vani, @supM, @volM, @tipo, @stato;
 
 -- =============================================================================================================== --
 -- 													OPERATION 8        		  									   --

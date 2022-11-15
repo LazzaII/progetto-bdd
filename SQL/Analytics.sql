@@ -16,28 +16,28 @@ SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 -- =======
 DROP PROCEDURE IF EXISTS checkUmidita;
 DELIMITER $$
-CREATE PROCEDURE checkUmidita(IN _idEdificio INT, IN tipo VARCHAR(7), OUT valroi TEXT)
+CREATE PROCEDURE checkUmidita(IN _idEdificio INT, IN tipo VARCHAR(9), OUT valori TEXT)
 BEGIN 
     # VAR
     DECLARE finito, id_sensore, idParete_o_vano, sensore_precedente, salto, parete_precedente INT DEFAULT 0;
-    DECLARE valX, soglia, _1ma, _7ma, _30ma, startVal, confirmVal DOUBLE DEFAULT 0;
+    DECLARE valX, soglia, _1ma, _7ma, _30ma, startVal, confirmVal, valore DOUBLE DEFAULT 0;
     DECLARE ts, startTs, confirmTs TIMESTAMP DEFAULT NULL;
 
     # CURSOR
     -- cursore per analizzare i muri
 	DECLARE ma_muro CURSOR FOR 
-    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`, P.`id_parete_vano`
-			  ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`, P.`id_parete_vano`,
+			  ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 1 AND 2
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '1dayMA', 
-              ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+              ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 7 AND 14
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '7daysMA',
-              ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+              ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
                 AND M.id_sensore = M2.id_sensore
@@ -45,33 +45,33 @@ BEGIN
 	FROM Misurazione M
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
     JOIN Parete P ON P.`ID` = S.`parete`
-    JOIN Vano V ON P.`ID` = P.`vano`
-    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = idEdificio)
-    WHERE M.`tipo`= 'igrometro'
+    JOIN Vano V ON V.`ID` = P.`vano`
+    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = _idEdificio)
+    WHERE S.`tipo`= 'igrometro'
 	ORDER BY M.`id_sensore`, M.`timestamp`;
 
     -- cursore per analizzare i pavimenti (parquet)
     DECLARE ma_pavimento CURSOR FOR 
-    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`
-			  ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`, V.`ID`,
+			  ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 1 AND 2
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '1dayMA', 
-              ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+              ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 7 AND 14
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '7daysMA',
-              ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+              ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '30daysMA'
 	FROM Misurazione M
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
-    JOIN Vano V ON P.`ID` = S.`vano`
-    WHERE M.`tipo`= 'igrometro' AND V.`parquet` IS NOT NULL -- quindi è presente il parquet
+    JOIN Vano V ON V.`ID` = S.`vano`
+    WHERE S.`tipo`= 'igrometro' AND V.`parquet` IS NOT NULL -- quindi è presente il parquet
 	ORDER BY M.`id_sensore`, M.`timestamp`;
 
 	# HANDLER
@@ -80,7 +80,7 @@ BEGIN
     
     # MAIN
     CASE
-        WHEN tipo = `MURO` THEN
+        WHEN tipo = 'MURO' THEN
         BEGIN
             OPEN ma_muro;
             ciclo: LOOP
@@ -91,6 +91,14 @@ BEGIN
 
                 FETCH ma_muro INTO id_sensore, ts, valX, soglia, idParete_o_vano, _1ma, _7ma, _30ma;
                 
+                --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
+                IF salto = 1 AND sensore_precedente = id_sensore
+                THEN 
+                    ITERATE ciclo;
+                ELSE 
+                    SET salto = 0;
+                END IF;
+                
                 -- controllo se cambia il sensore, nel caso ci salviamo tutti i dati necessari
                 IF sensore_precedente <> id_sensore
                 THEN
@@ -99,35 +107,28 @@ BEGIN
                     -- il primo punto  avrà coordinata 0 mentre il secondo la differenza dei giorni
                     IF valore <> 100
                     THEN
-                        SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs - startTs);
+                        SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = STR_CONCAT(valore, parete_precedente, sensore_precedente);
-                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = 0; SET  startVal = 0;
+                    SET valori = CONCAT(valore, ' ', parete_precedente, ' ', sensore_precedente);
+                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET startVal = 0;
                 END IF; 
-
-                --  se è stata imposta l'impostazione di salto si controlla di arrivaer al nuovo sensore per reimpostarla.
-                IF salto = 1 AND sensore_precedente = id_sensore
-                THEN 
-                    ITERATE ciclo;
-                ELSE 
-                    SET salto = 0;
-                END IF;
                 
                 IF valX > soglia
                 THEN
-                    -- stato = STR_CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
+                    -- stato = CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
                     -- da usare dopo   
                     SET valore = 100;
                     SET salto = 1;
-                ELSE IF _30ma IS NOT NULL
+                ELSEIF _30ma IS NOT NULL
                 THEN
-                    IF startTs = 0 AND startVal = 0
+                    IF startTs IS NULL AND startVal = 0
                     THEN    
                         SET startTs = ts;
                         SET startVal = valX;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
+                        SET parete_precedente = idParete_o_vano;
+					END IF;
                     IF _30ma > _1ma AND _30ma > _7ma
                     THEN
                         IF _1ma >= _7ma 
@@ -135,27 +136,29 @@ BEGIN
                             SET startTs = ts;
                             SET startVal = valX;
                             SET sensore_precedente = id_sensore;
-                            SET parete_precedente = id_parete_vano;
+                            SET parete_precedente = idParete_o_vano;
                         END IF;
-                    ELSEIF _30ma <= _1ma AND _30ma <= _7ma AND _1ma >= _7ma
+                    ELSEIF _30ma <= _1ma AND _30ma <= _7ma AND _1ma >= _7ma 
+					THEN
                         SET confirmTs = ts;
                         SET confirmVal = valX;
                         SET salto = 1;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
-                    ELSEIF startTs IS NULL AND _1ma >= _7ma
+                        SET parete_precedente = idParete_o_vano;
+                    ELSEIF startTs IS NULL AND _1ma >= _7ma 
+                    THEN
                         SET confirmTs = ts;
                         SET confirmVal = valX;
                         SET salto = 1;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
+                        SET parete_precedente = idParete_o_vano;
                     END IF;
-                END IF;
+				END IF;
             END LOOP;
             CLOSE ma_muro;  
         END;
 
-        WHEN tipo = `PAVIMENTO` THEN
+        WHEN tipo = 'PAVIMENTO' THEN
         BEGIN
             OPEN ma_pavimento;
             ciclo: LOOP
@@ -174,14 +177,14 @@ BEGIN
                     -- il primo punto  avrà coordinata 0 mentre il secondo la differenza dei giorni
                     IF valore <> 100
                     THEN
-                        SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs - startTs);
+                        SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = STR_CONCAT(valore, parete_precedente, sensore_precedente);
-                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = 0; SET  startVal = 0;
+                    SET valori = CONCAT(valore, parete_precedente, sensore_precedente);
+                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
                 END IF; 
 
-                --  se è stata imposta l'impostazione di salto si controlla di arrivaer al nuovo sensore per reimpostarla.
+                --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
                 IF salto = 1 AND sensore_precedente = id_sensore
                 THEN 
                     ITERATE ciclo;
@@ -191,18 +194,19 @@ BEGIN
                 
                 IF valX > soglia
                 THEN
-                    -- stato = STR_CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
+                    -- stato = concat('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
                     -- da usare dopo   
                     SET valore = 100;
                     SET salto = 1;
-                ELSE IF _30ma IS NOT NULL
+                ELSEIF _30ma IS NOT NULL
                 THEN
-                    IF startTs = 0 AND startVal = 0
+                    IF startTs IS NULL AND startVal = 0
                     THEN    
                         SET startTs = ts;
                         SET startVal = valX;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
+                        SET parete_precedente = idParete_o_vano;
+					END IF;
                     IF _30ma > _1ma AND _30ma > _7ma
                     THEN
                         IF _1ma >= _7ma 
@@ -210,25 +214,27 @@ BEGIN
                             SET startTs = ts;
                             SET startVal = valX;
                             SET sensore_precedente = id_sensore;
-                            SET parete_precedente = id_parete_vano;
+                            SET parete_precedente = idParete_o_vano;
                         END IF;
                     ELSEIF _30ma <= _1ma AND _30ma <= _7ma AND _1ma >= _7ma
+                    THEN
                         SET confirmTs = ts;
                         SET confirmVal = valX;
                         SET salto = 1;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
+                        SET parete_precedente = idParete_o_vano;
                     ELSEIF startTs IS NULL AND _1ma >= _7ma
+                    THEN
                         SET confirmTs = ts;
                         SET confirmVal = valX;
                         SET salto = 1;
                         SET sensore_precedente = id_sensore;
-                        SET parete_precedente = id_parete_vano;
+                        SET parete_precedente = idParete_o_vano;
                     END IF;
                 END IF;
             END LOOP;
             CLOSE ma_pavimento;
-        END
+        END;
     END CASE;
 END $$
 DELIMITER ;
@@ -238,28 +244,28 @@ DELIMITER ;
 -- ======
 DROP PROCEDURE IF EXISTS checkCrepe;
 DELIMITER $$
-CREATE PROCEDURE checkUmidita(IN _idEdificio INT, OUT valore INT)
+CREATE PROCEDURE checkCrepe(IN _idEdificio INT, OUT valori INT)
 BEGIN 
     # VAR
-    DECLARE finito, id_sensore, idParete_o_vano INT DEFAULT 0;
-    DECLARE valX, soglia, _1ma, _7ma, _30ma, startVal, confirmVal DOUBLE DEFAULT 0;
+    DECLARE finito, id_sensore, id_parete_vano, salto, parete_precedente, sensore_precedente INT DEFAULT 0;
+    DECLARE valX, soglia, _1ma, _7ma, _30ma, startVal, confirmVal, valore DOUBLE DEFAULT 0;
     DECLARE ts, startTs, confirmTs TIMESTAMP DEFAULT NULL;
  
     # CURSOR
     -- cursore per analizzare i muri
     DECLARE ma_muro_crepe CURSOR FOR 
-    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`, P.`id_parete_vano`
-            ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, S.`soglia`, P.`id_parete_vano`,
+            ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 1 AND 2
                 AND M.id_sensore = M2.id_sensore
             ), 2) AS '1dayMA', 
-            ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+            ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 7 AND 14
                 AND M.id_sensore = M2.id_sensore
             ), 2) AS '7daysMA',
-            ROUND((SUM(M2.valoreX) / COUNT(M2.valoreX)
+            ROUND((SELECT SUM(M2.valoreX) / COUNT(M2.valoreX)
                 FROM Misurazione M2
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
                 AND M.id_sensore = M2.id_sensore
@@ -268,8 +274,8 @@ BEGIN
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
     JOIN Parete P ON P.`ID` = S.`parete`
     JOIN Vano V ON P.`ID` = P.`vano`
-    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = idEdificio)
-    WHERE M.`tipo`= 'fessurimetro'
+    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = _idEdificio)
+    WHERE S.`tipo`= 'fessurimetro'
     ORDER BY M.`id_sensore`, M.`timestamp`;
 
     # HANDLER
@@ -284,7 +290,7 @@ BEGIN
             LEAVE ciclo;
         END IF;
 
-        FETCH ma_muro_crepe INTO id_sensore, ts, valX, soglia, idParete_o_vano, _1ma, _7ma, _30ma;
+        FETCH ma_muro_crepe INTO id_sensore, ts, valX, soglia, id_parete_vano, _1ma, _7ma, _30ma;
         
         -- controllo se cambia il sensore, nel caso ci salviamo tutti i dati necessari
         IF sensore_precedente <> id_sensore
@@ -294,14 +300,14 @@ BEGIN
             -- il primo punto  avrà coordinata 0 mentre il secondo la differenza dei giorni
             IF valore <> 100
             THEN
-                SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs - startTs);
+                SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
             END IF;
 
-            SET valori = STR_CONCAT(valore, parete_precedente, sensore_precedente);
-            SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = 0; SET  startVal = 0;
+            SET valori = CONCAT(valore, parete_precedente, sensore_precedente);
+            SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
         END IF; 
 
-        --  se è stata imposta l'impostazione di salto si controlla di arrivaer al nuovo sensore per reimpostarla.
+        --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
         IF salto = 1 AND sensore_precedente = id_sensore
         THEN 
             ITERATE ciclo;
@@ -311,18 +317,19 @@ BEGIN
         
         IF valX > soglia
         THEN
-            -- stato = STR_CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
+            -- stato = CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
             -- da usare dopo   
             SET valore = 100;
             SET salto = 1;
-        ELSE IF _30ma IS NOT NULL
+        ELSEIF _30ma IS NOT NULL
         THEN
-            IF startTs = 0 AND startVal = 0
+            IF startTs IS NULL AND startVal = 0
             THEN    
                 SET startTs = ts;
                 SET startVal = valX;
                 SET sensore_precedente = id_sensore;
                 SET parete_precedente = id_parete_vano;
+			END IF;
             IF _30ma > _1ma AND _30ma > _7ma
             THEN
                 IF _1ma >= _7ma 
@@ -333,12 +340,14 @@ BEGIN
                     SET parete_precedente = id_parete_vano;
                 END IF;
             ELSEIF _30ma <= _1ma AND _30ma <= _7ma AND _1ma >= _7ma
+            THEN
                 SET confirmTs = ts;
                 SET confirmVal = valX;
                 SET salto = 1;
                 SET sensore_precedente = id_sensore;
                 SET parete_precedente = id_parete_vano;
             ELSEIF startTs IS NULL AND _1ma >= _7ma
+            THEN
                 SET confirmTs = ts;
                 SET confirmVal = valX;
                 SET salto = 1;
@@ -416,23 +425,23 @@ BEGIN
         JOIN Edificio E ON E.`area_geografica` = AG.`ID`
         JOIN Piano P ON P.`edificio` = E.`ID`
         JOIN Vano V ON V.`edificio` = P.`edificio` AND V.`piano` = P.`numero`
-        JOIN Parete PA ON PA.vano = V.ID
-        JOIN Sensore S ON S.vano = V.ID OR S.Parete = PA.ID
-        JOIN Misurazione M ON M.id_sensore = S.ID
+        JOIN Parete PA ON PA.`vano` = V.ID
+        JOIN Sensore S ON S.`vano` = V.ID OR S.`parete` = PA.`ID`
+        JOIN Misurazione M ON M.`id_sensore` = S.`ID`
         WHERE 
-            AG.ID = ag
+            AG.`ID` = ag
             AND 
             S.tipo = 'termometro'
             AND 
-            DATEDIFF(M.timestamp, ts) BETWEEN 0 AND 1
+            DATEDIFF(M.`timestamp`, ts) BETWEEN 0 AND 1
             AND 
             M.`valoreX` IN (
                 SELECT MAX(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)))
                 FROM Misurazione M2
-                WHERE DATEDIFF(M2.timestamp, ts) BETWEEN 0 AND 1 AND M2.id_sensore = S.ID
+                WHERE DATEDIFF(M2.`timestamp`, ts) BETWEEN 0 AND 1 AND M2.`id_sensore` = S.ID
             );
     
-        UPDATE AreaColpita AC SET AC.gravita = gravita WHERE AC.`timestamp` = ts AND AC.`area` = ag AND AC.calamita = calamita;
+        UPDATE AreaColpita AC SET AC.`gravita` = gravita WHERE AC.`timestamp` = ts AND AC.`area` = ag AND AC.`calamita` = calamita;
     END IF;
 	END WHILE;
     CLOSE cur;
@@ -463,11 +472,15 @@ BEGIN
         PRIMARY KEY(intervento)
     ); 
     
-		
+	
 END $$
 DELIMITER ;
 
+CALL checkCrepe(1, @val);
+SELECT @val;
 
--- ===============
--- stima dei danni
--- ===============
+CALL checkUmidita(1, 'MURO', @val);
+SELECT @val;
+
+CALL checkUmidita(1, 'PAVIMENTO', @val);
+SELECT @val;
