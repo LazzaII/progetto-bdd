@@ -11,6 +11,62 @@ SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 -- STATO DELL'EDIFICIO
 -- ===================
 
+-- =========
+-- struttura 
+-- =========
+DROP PROCEDURE IF EXISTS checkStruttura;
+DELIMITER $$
+CREATE PROCEDURE checkStruttura(IN _idEdificio INT, OUT valori TEXT)
+BEGIN 
+	# VAR
+    DECLARE finito INT DEFAULT 0;
+    
+    # CURSOR
+    DECLARE ma_struttura CURSOR FOR 
+    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, M.`valoreY`, M.`valoreZ`, 
+			  ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
+				/ COUNT(M2.valoreX)
+                FROM Misurazione M2
+                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 1 AND 2
+                AND M.id_sensore = M2.id_sensore
+              ), 2) AS '1dayMA', 
+              ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
+               / COUNT(M2.valoreX)
+                FROM Misurazione M2
+                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 7 AND 14
+                AND M.id_sensore = M2.id_sensore
+              ), 2) AS '7daysMA',
+              ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
+               / COUNT(M2.valoreX)
+                FROM Misurazione M2
+                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
+                AND M.id_sensore = M2.id_sensore
+              ), 2) AS '30daysMA'
+	FROM `Misurazione` M
+    JOIN `Sensore` S ON S.`ID` = M.`id_sensore`
+    JOIN `Vano` V ON S.`vano` = V.`ID`
+    WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'accelerometro'
+	ORDER BY M.`id_sensore`, M.`timestamp`;
+    
+    # HANDLER
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
+    
+    # MAIN
+    OPEN ma_struttura;
+    
+    ciclo: LOOP 
+		IF finito = 1
+        THEN 
+			LEAVE ciclo;
+		END IF;
+        
+        
+    END LOOP;
+    
+	CLOSE ma_struttura;
+END $$ 
+DELIMITER ;
+
 -- =======
 -- umidità
 -- =======
@@ -46,8 +102,7 @@ BEGIN
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
     JOIN Parete P ON P.`ID` = S.`parete`
     JOIN Vano V ON V.`ID` = P.`vano`
-    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = _idEdificio)
-    WHERE S.`tipo`= 'igrometro'
+    WHERE S.`tipo`= 'igrometro' AND V.`edificio` = _idEdificio
 	ORDER BY M.`id_sensore`, M.`timestamp`;
 
     -- cursore per analizzare i pavimenti (parquet)
@@ -71,7 +126,7 @@ BEGIN
 	FROM Misurazione M
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
     JOIN Vano V ON V.`ID` = S.`vano`
-    WHERE S.`tipo`= 'igrometro' AND V.`parquet` IS NOT NULL -- quindi è presente il parquet
+    WHERE S.`tipo`= 'igrometro' AND V.`parquet` IS NOT NULL AND V.`edificio` = _idEdificio 
 	ORDER BY M.`id_sensore`, M.`timestamp`;
 
 	# HANDLER
@@ -90,17 +145,9 @@ BEGIN
                 END IF;
 
                 FETCH ma_muro INTO id_sensore, ts, valX, soglia, idParete_o_vano, _1ma, _7ma, _30ma;
-                
-                --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
-                IF salto = 1 AND sensore_precedente = id_sensore
-                THEN 
-                    ITERATE ciclo;
-                ELSE 
-                    SET salto = 0;
-                END IF;
-                
+                                
                 -- controllo se cambia il sensore, nel caso ci salviamo tutti i dati necessari
-                IF sensore_precedente <> id_sensore
+                IF sensore_precedente <> id_sensore AND sensore_precedente <> 0
                 THEN
                     -- calcolo della rapidità con cui inizia il trend e avviene la conferma, 
                     -- si trova la retta tra i due punti e si salva la "m" dell'equazione
@@ -114,13 +161,21 @@ BEGIN
                     SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET startVal = 0;
                 END IF; 
                 
+				--  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
+                IF salto = 1 AND sensore_precedente = id_sensore AND valX < soglia
+                THEN 
+                    ITERATE ciclo;
+                ELSE 
+                    SET salto = 0;
+                END IF;
+                
                 IF valX > soglia
                 THEN
                     -- stato = CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
                     -- da usare dopo   
                     SET valore = 100;
                     SET salto = 1;
-                ELSEIF _30ma IS NOT NULL
+                ELSEIF _30ma IS NOT NULL AND salto = 0
                 THEN
                     IF startTs IS NULL AND startVal = 0
                     THEN    
@@ -170,7 +225,7 @@ BEGIN
                 FETCH ma_pavimento INTO id_sensore, ts, valX, soglia, idParete_o_vano, _1ma, _7ma, _30ma;
                 
                 -- controllo se cambia il sensore, nel caso ci salviamo tutti i dati necessari
-                IF sensore_precedente <> id_sensore
+                IF sensore_precedente <> id_sensore AND sensore_precedente <> 0
                 THEN
                     -- calcolo della rapidità con cui inizia il trend e avviene la conferma, 
                     -- si trova la retta tra i due punti e si salva la "m" dell'equazione
@@ -185,7 +240,7 @@ BEGIN
                 END IF; 
 
                 --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
-                IF salto = 1 AND sensore_precedente = id_sensore
+                IF salto = 1 AND sensore_precedente = id_sensore AND valX < soglia
                 THEN 
                     ITERATE ciclo;
                 ELSE 
@@ -244,7 +299,7 @@ DELIMITER ;
 -- ======
 DROP PROCEDURE IF EXISTS checkCrepe;
 DELIMITER $$
-CREATE PROCEDURE checkCrepe(IN _idEdificio INT, OUT valori INT)
+CREATE PROCEDURE checkCrepe(IN _idEdificio INT, OUT valori TEXT)
 BEGIN 
     # VAR
     DECLARE finito, id_sensore, id_parete_vano, salto, parete_precedente, sensore_precedente INT DEFAULT 0;
@@ -273,9 +328,8 @@ BEGIN
     FROM Misurazione M
     JOIN Sensore S ON S.`ID` = M.`id_sensore`
     JOIN Parete P ON P.`ID` = S.`parete`
-    JOIN Vano V ON P.`ID` = P.`vano`
-    JOIN Piano PI ON (PI.`numero` = V.`piano`) AND (PI.`edificio` = _idEdificio)
-    WHERE S.`tipo`= 'fessurimetro'
+    JOIN Vano V ON V.`ID` = P.`vano`
+    WHERE S.`tipo`= 'fessurimetro' AND V.`edificio` = _idEdificio
     ORDER BY M.`id_sensore`, M.`timestamp`;
 
     # HANDLER
@@ -291,9 +345,9 @@ BEGIN
         END IF;
 
         FETCH ma_muro_crepe INTO id_sensore, ts, valX, soglia, id_parete_vano, _1ma, _7ma, _30ma;
-        
+                
         -- controllo se cambia il sensore, nel caso ci salviamo tutti i dati necessari
-        IF sensore_precedente <> id_sensore
+        IF sensore_precedente <> id_sensore AND sensore_precedente <> 0
         THEN
             -- calcolo della rapidità con cui inizia il trend e avviene la conferma, 
             -- si trova la retta tra i due punti e si salva la "m" dell'equazione
@@ -303,15 +357,16 @@ BEGIN
                 SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
             END IF;
 
-            SET valori = CONCAT(valore, parete_precedente, sensore_precedente);
+            SET valori = CONCAT(valore, ' ', parete_precedente, ' ', sensore_precedente);
             SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
         END IF; 
 
         --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
-        IF salto = 1 AND sensore_precedente = id_sensore
+        IF salto = 1 AND sensore_precedente = id_sensore AND valX < soglia
         THEN 
             ITERATE ciclo;
-        ELSE 
+        ELSEIF sensore_precedente <> id_sensore 
+        THEN
             SET salto = 0;
         END IF;
         
@@ -321,7 +376,7 @@ BEGIN
             -- da usare dopo   
             SET valore = 100;
             SET salto = 1;
-        ELSEIF _30ma IS NOT NULL
+        ELSEIF _30ma IS NOT NULL AND salto = 0
         THEN
             IF startTs IS NULL AND startVal = 0
             THEN    
@@ -332,7 +387,7 @@ BEGIN
 			END IF;
             IF _30ma > _1ma AND _30ma > _7ma
             THEN
-                IF _1ma >= _7ma 
+                IF _1ma > _7ma 
                 THEN
                     SET startTs = ts;
                     SET startVal = valX;
@@ -357,6 +412,24 @@ BEGIN
         END IF;
     END LOOP;
     CLOSE ma_muro_crepe;
+END $$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS calcolaStatoEdificio;
+DELIMITER $$
+CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ VARCHAR(11))
+BEGIN 
+	# VAR
+	DECLARE statoPareti TEXT DEFAULT '';
+    DECLARE statoAmbienteMuro TEXT DEFAULT '';
+    DECLARE statoAmbientePavimento TEXT DEFAULT '';
+    DECLARE statoStruttura TEXT DEFAULT '';
+    
+	# MAIN
+    CALL checkCrepe(_idEdificio, statoPareti);
+    CALL checkUmidita(_idEdificio, 'MURO', statoAmbienteMuro);
+    CALL checkUmidita(_idEdificio, 'PAVIMENTO', statoAmbientePavimento);
+    CALL checkStruttura(_idEdificio, statoStruttura);
 END $$
 DELIMITER ;
 
@@ -475,12 +548,3 @@ BEGIN
 	
 END $$
 DELIMITER ;
-
-CALL checkCrepe(1, @val);
-SELECT @val;
-
-CALL checkUmidita(1, 'MURO', @val);
-SELECT @val;
-
-CALL checkUmidita(1, 'PAVIMENTO', @val);
-SELECT @val;

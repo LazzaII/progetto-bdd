@@ -552,25 +552,25 @@ INSERT INTO `StratoIntonaco` (`strato`, `parete`, `intonaco`) VALUES
 
 -- Popolamento sensori 
 INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `tipo`, `soglia`, `unita_di_misura`, `parete`, `vano`) VALUES 
-(40, 180, 0, 'fessurimetro', 50, 'mm', 12, NULL), 
-(30, 0, 0, 'accelerometro', 10, 'mm/s^2', NULL, 8), 
-(20, 15, 0, 'giroscopio', 10, 'Nmm', NULL, 6), 
-(60, 175, 0, 'termometro', 55, '°C', 23, NULL), 
+(40, 180, 0, 'fessurimetro', 50, 'mm', 1, NULL), 
+(30, 0, 0, 'accelerometro', 10, 'mm/s^2', NULL, 1), 
+(20, 15, 0, 'giroscopio', 10, 'Nmm', NULL, 1), 
+(60, 175, 0, 'termometro', 55, '°C', 2, NULL), 
 (70, 180, 0, 'termometro', -10, '°C', 7, NULL), 
-(40, 200, 0, 'igrometro', 150, '%', 45, NULL), 
+(40, 200, 0, 'igrometro', 150, '%', 4, NULL), 
 (30, 210, 1, 'pluviometro', 300, 'mm', NULL, NULL), 
 (70, 200, 1, 'pluviometro', 280, 'mm', NULL, NULL), 
-(35, 190, 0, 'igrometro', 120, '%', 33, NULL), 
+(35, 190, 0, 'igrometro', 120, '%', 6, NULL), 
 (45, 220, 1, 'pluviometro', 310, 'mm', NULL, NULL), 
-(60, 5, 1, 'igrometro', 120, '%', 72, NULL), 
-(40, 10, 1, 'igrometro', 110, '%', 70, NULL), 
-(30, 185, 0, 'fessurimetro', 50, 'mm', 57, NULL), 
-(30, 140, 0, 'giroscopio', 15, 'Nmm', NULL, 12), 
-(40, 100, 0, 'giroscopio', 10, 'Nmm', NULL, 9), 
-(20, 10, 0, 'accelerometro', 15, 'mm/s^2', NULL, 3), 
-(20, 175, 0, 'fessurimetro', 45, 'mm', 30, NULL), 
+(60, 5, 1, 'igrometro', 120, '%', 7, NULL), 
+(40, 10, 1, 'igrometro', 110, '%', 10, NULL), 
+(30, 185, 0, 'fessurimetro', 50, 'mm', 8, NULL), 
+(30, 140, 0, 'giroscopio', 15, 'Nmm', NULL, 3), 
+(40, 100, 0, 'giroscopio', 10, 'Nmm', NULL, 4), 
+(20, 10, 0, 'accelerometro', 15, 'mm/s^2', NULL, 4), 
+(20, 175, 0, 'fessurimetro', 45, 'mm', 3, NULL), 
 (35, 120, 1, 'termometro', -15, '°C', 21, NULL), 
-(45, 175, 0, 'fessurimetro', 40, 'mm', 69, NULL), 
+(45, 175, 0, 'fessurimetro', 40, 'mm', 4, NULL), 
 (50, 160, 1, 'termometro', 60, '°C', 14, NULL);
 
 /*
@@ -603,13 +603,13 @@ BEGIN
     IF(tipo = 'accelerometro' OR tipo = 'giroscopio') 
     THEN 
 		-- genera un numero random tra soglia(max) e 0(min)
-		SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val1;
-        SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val2;
-        SELECT ROUND(RAND()*(soglia/3+1), 2) INTO val3;
+		SELECT ROUND(RAND()*(soglia*1.1/3+1), 2) INTO val1;
+        SELECT ROUND(RAND()*(soglia*1.1/3+1), 2) INTO val2;
+        SELECT ROUND(RAND()*(soglia*1.1/3+1), 2) INTO val3;
 
         SET percentualeLivello = ROUND(SQRT(val1*val1+val2*val2+val3*val3)/soglia, 2)*100;
 	ELSE 
-		SELECT ROUND(RAND()*(soglia+1), 2) INTO val1;
+		SELECT ROUND(RAND()*(soglia*1.1+1), 2) INTO val1;
 
         SET percentualeLivello = ROUND(val1/soglia, 2)*100;
 	END IF;

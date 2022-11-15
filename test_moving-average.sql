@@ -11,7 +11,15 @@ CREATE TABLE MovingAverages (
     ma30 DOUBLE
 );
 
-SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, M.`valoreY`, M.`valoreZ`, 
+DELIMITER $$
+CREATE PROCEDURE ciao()
+BEGIN 
+	
+    DECLARE finito, sensore INT default 0;
+    DECLARE _1ma, _7ma, _30ma DOUBLE DEFAULT 0;
+    
+    DECLARE cur CURSOR FOR 
+    SELECT M.`id_sensore`, 
 			  ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
 				/ COUNT(M2.valoreX)
                 FROM Misurazione M2
@@ -30,5 +38,17 @@ SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, M.`valoreY`, M.`valoreZ`,
                 WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
                 AND M.id_sensore = M2.id_sensore
               ), 2) AS '30daysMA'
-FROM Misurazione M
-ORDER BY M.`id_sensore`, M.`timestamp`;
+	FROM Misurazione M
+	JOIN Sensore S ON M.id_sensore = S.ID
+	WHERE M.id_sensore = 1 AND M.valoreX > soglia
+	ORDER BY M.`id_sensore`, M.`timestamp`;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
+    OPEN cur;
+    WHILE finito = 0 DO 
+		FETCH cur into sensore, _1ma, _7ma, _30ma;
+        SELECT sensore, _1ma, _7ma, _30ma;
+    END WHILE;
+
+END $$
+DELIMITER ;
