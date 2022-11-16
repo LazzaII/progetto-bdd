@@ -243,7 +243,7 @@ INSERT INTO `Vano` (`edificio`, `piano`, `lunghezza`, `larghezza`, `funzione`, `
 (1, 1, 400, 300, 'Cucina', NULL, 4),
 (1, 1, 290, 350, 'Sala da pranzo', NULL, 4),
 (1, 1, 430, 200, 'Soggiorno', NULL, 2),
-(1, 1, 390, 400, 'Camera da letto', NULL, 1),
+(1, 1, 390, 400, 'Camera da letto', 1, NULL),
 (1, 1, 400, 360, 'Camera da letto', 3, NULL),
 (1, 2, 350, 400, 'Cucina', NULL, 4),
 (1, 2, 450, 350, 'Sala da pranzo', 2, NULL),

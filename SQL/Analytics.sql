@@ -82,7 +82,7 @@ DELIMITER ;
 -- =======
 DROP PROCEDURE IF EXISTS checkUmidita;
 DELIMITER $$
-CREATE PROCEDURE checkUmidita(IN _idEdificio INT, IN tipo VARCHAR(9), OUT valori TEXT)
+CREATE PROCEDURE checkUmidita(IN _idEdificio INT, IN tipo VARCHAR(9), OUT punteggi_ TEXT, OUT ids_ TEXT, OUT contatore_ INT)
 BEGIN 
     # VAR
     DECLARE finito, id_sensore, idParete_o_vano, sensore_precedente, salto, parete_precedente INT DEFAULT 0;
@@ -144,7 +144,9 @@ BEGIN
     SET finito = 1;
     
     # MAIN
-    SET valori = '';
+    SET punteggi_ = '';
+    SET ids_ = '';
+    SET contatore_ = 0;
     CASE
         WHEN tipo = 'MURO' THEN
         BEGIN
@@ -168,7 +170,9 @@ BEGIN
                         SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = CONCAT(valori, ' ', valore, ' ', parete_precedente, ' ', sensore_precedente);
+                    SET punteggi_ = CONCAT(punteggi_, valore, ',');
+                    SET ids_ = CONCAT(ids_, parete_precedente, '-', sensore_precedente, ',');
+                    SET contatore_ = contatore_ + 1;
                     SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET startVal = 0;
                 END IF; 
                 
@@ -182,8 +186,6 @@ BEGIN
                 
                 IF valX > soglia
                 THEN
-                    -- stato = CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
-                    -- da usare dopo   
                     SET valore = 100;
                     SET salto = 1;
                 ELSEIF _30ma IS NOT NULL AND salto = 0
@@ -246,8 +248,10 @@ BEGIN
                         SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = CONCAT(valori, ' ', valore, parete_precedente, sensore_precedente);
-                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
+                    SET punteggi_ = CONCAT(punteggi_, valore, ',');
+                    SET ids_ = CONCAT(ids_, parete_precedente, '-', sensore_precedente, ',');
+                    SET contatore_ = contatore_ + 1;
+                    SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET startVal = 0;
                 END IF; 
 
                 --  se è stata imposta l'impostazione di salto si controlla di arrivare al nuovo sensore per reimpostarla.
@@ -260,8 +264,6 @@ BEGIN
                 
                 IF valX > soglia
                 THEN
-                    -- stato = concat('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
-                    -- da usare dopo   
                     SET valore = 100;
                     SET salto = 1;
                 ELSEIF _30ma IS NOT NULL
@@ -310,7 +312,7 @@ DELIMITER ;
 -- ======
 DROP PROCEDURE IF EXISTS checkCrepe;
 DELIMITER $$
-CREATE PROCEDURE checkCrepe(IN _idEdificio INT, OUT valori TEXT)
+CREATE PROCEDURE checkCrepe(IN _idEdificio INT, OUT punteggi_ TEXT, OUT ids_ TEXT, OUT contatore_ INT)
 BEGIN 
     # VAR
     DECLARE finito, id_sensore, id_parete_vano, salto, parete_precedente, sensore_precedente INT DEFAULT 0;
@@ -348,7 +350,9 @@ BEGIN
     SET finito = 1;
 
     # MAIN 
-    SET valori = '';
+    SET punteggi_ = '';
+    SET ids_ = '';
+    SET contatore_ = 0;
     OPEN ma_muro_crepe;
     ciclo: LOOP
         IF finito = 1
@@ -369,7 +373,9 @@ BEGIN
                 SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
             END IF;
 
-            SET valori = CONCAT(valori, ' ', valore, ' ', parete_precedente, ' ', sensore_precedente);
+			SET punteggi_ = CONCAT(punteggi_, valore, ',');
+            SET ids_ = CONCAT(ids_, parete_precedente, '-', sensore_precedente, ',');
+            SET contatore_ = contatore_ + 1;
             SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
         END IF; 
 
@@ -384,8 +390,6 @@ BEGIN
         
         IF valX > soglia
         THEN
-            -- stato = CONCAT('Necessari lavori urgenti sulla parete: ', idParete_o_vano, '. Misurazione rilevata dal sensore: ', id_sensore);
-            -- da usare dopo   
             SET valore = 100;
             SET salto = 1;
         ELSEIF _30ma IS NOT NULL AND salto = 0
@@ -433,22 +437,99 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS calcolaStatoEdificio;
 DELIMITER $$
-CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ VARCHAR(11))
+CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ INT)
 BEGIN 
 	# VAR
-	DECLARE statoPareti TEXT DEFAULT '';
-    DECLARE statoAmbienteMuro TEXT DEFAULT '';
-    DECLARE statoAmbientePavimento TEXT DEFAULT '';
-    DECLARE statoStruttura TEXT DEFAULT '';
+	DECLARE statoTmp, idsPareti TEXT DEFAULT '';
+    DECLARE contatore, punteggioTotale INT DEFAULT 0;
+    DECLARE statoStruttura DOUBLE DEFAULT 0;
+    # var di appoggio
+    DECLARE idTotali, idParete, idSensore, punteggio TEXT DEFAULT '';
+    DECLARE tmpContatore INT DEFAULT 0;
     
 	# MAIN
-    SET stato_ = '';
-    CALL checkCrepe(_idEdificio, statoPareti);
-    CALL checkUmidita(_idEdificio, 'MURO', statoAmbienteMuro);
-    CALL checkUmidita(_idEdificio, 'PAVIMENTO', statoAmbientePavimento);
+    SET stato_ = 0;
+    -- punteggio pareti
+    CALL checkCrepe(_idEdificio, statoTmp, idsPareti, contatore);
+    SET tmpContatore = contatore;
+    ciclo: LOOP
+		IF contatore = 0
+		THEN 
+            LEAVE ciclo;
+        END IF;
+        
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+        
+        SET punteggioTotale = punteggioTotale + CAST(punteggio AS UNSIGNED);
+
+        -- preparzione del prossimo ciclo
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp) + 1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+   IF tmpContatore <> 0 -- se è uguale a 0 niente fa alert quindi non gli viene sommato nulla
+    THEN
+		-- calcolo dell'impatto al 35%
+		SET stato_ = stato_ + (punteggioTotale/tmpContatore) * 0.35; 
+    END IF;
+
+    -- punteggio ambiente da muri
+    CALL checkUmidita(_idEdificio, 'MURO', statoTmp, idsPareti, contatore);
+    SET tmpContatore = contatore;
+    ciclo: LOOP
+		IF contatore = 0
+		THEN 
+            LEAVE ciclo;
+        END IF;
+        
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+        
+        -- preparzione del prossimo ciclo
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp)+1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+    IF tmpContatore <> 0 -- se è uguale a 0 niente fa alert quindi non gli viene sommato nulla
+    THEN
+		-- calcolo dell'impatto al 10%
+		SET stato_ = stato_ + (punteggioTotale/tmpContatore) * 0.1; 
+    END IF;
+
+    -- punteggio ambiente da pavimento
+    CALL checkUmidita(_idEdificio, 'PAVIMENTO', statoTmp, idsPareti, contatore);
+    SET tmpContatore = contatore;
+    ciclo: LOOP
+		IF contatore = 0
+		THEN 
+            LEAVE ciclo;
+        END IF;
+        	
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+        
+        -- preparzione del prossimo ciclo
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp)+1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+	IF tmpContatore <> 0 -- se è uguale a 0 niente fa alert quindi non gli viene sommato nulla
+    THEN
+		-- calcolo dell'impatto al 10%
+		SET stato_ = stato_ + (punteggioTotale/tmpContatore) * 0.1; 
+    END IF;
+
+    -- punteggio struttura
     CALL checkStruttura(_idEdificio, statoStruttura);
+    -- calcolo dell'impatto al 45%
+    SET stato_ = stato_ + statoStruttura * 0.45 ;
     
-    
+	-- si sottrae 100 perchè lo stato va da 0 a 100 mentre lo stato calcolato fino a questo punto andrebbe da 100 a 0
+	SET stato_ = 100 - stato_ ;
+    -- e lo aggiorna nel database oltre a renderlo come output
+    UPDATE `Edificio` E SET E.`stato`= stato_ WHERE E.`ID` = _idEdificio;
+   
 END $$
 DELIMITER ;
 
@@ -539,12 +620,6 @@ BEGIN
     CLOSE cur;
 END $$
 
--- TABELLA CON 
-# ACCELEROSCOPI -> oscillazioni struttura (vento simile terremoto)
-# UMIDITÀ, CREPE NEI MURI FATTO
-# SOLAI vedere l abbassamento (abbassamento = freccia) stimare la freccia del solaio
-# INFILTRAZIONI dal tetto (anche questa è più visiva)
-
 -- ==========
 -- ANALYTICS
 -- ==========
@@ -556,14 +631,185 @@ DROP PROCEDURE IF EXISTS consigliIntervento;
 DELIMITER $$
 CREATE PROCEDURE consigliIntervento(IN _idEdificio INT)
 BEGIN
+	# VAR
+	DECLARE statoTmp, idsPareti TEXT DEFAULT '';
+    DECLARE contatore, punteggioTotale INT DEFAULT 0;
+    DECLARE media, statoStruttura DOUBLE DEFAULT 0;
+    # var di appoggio
+    DECLARE idTotali, idParete, idSensore, punteggio TEXT DEFAULT '';
+
 	#UTILS
 	DROP TABLE IF EXISTS interventi; 
     CREATE TEMPORARY TABLE interventi (
         intervento TEXT NOT NULL,
         rischio INT NOT NULL,
-        PRIMARY KEY(intervento)
+        priorita INT NOT NULL CHECK(priorita BETWEEN 1 AND 5)
     ); 
     
-	
+	# MAIN
+    -- punteggio crepe
+    CALL checkCrepe(_idEdificio, statoTmp, idsPareti, contatore);
+    ciclo: LOOP
+        IF contatore = 0
+        THEN 
+            LEAVE ciclo; 
+        END IF;
+    
+		SET idTotali = SUBSTR(idsPareti, 1, POSITION(',' IN idsPareti));
+        SET idParete = SUBSTR(idTotali, 1, POSITION('-' IN idTotali) - 1);
+        SET idSensore = SUBSTR(idTotali, POSITION('-' IN idTotali) + 1, LENGTH(idTotali));
+        SET idSensore = SUBSTR(idSensore, 1, LENGTH(idSensore) - 1); -- rimozione virgola finale
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+
+        CASE 
+            -- sotto a 26 non necessita interventi
+            WHEN punteggio BETWEEN 26 AND 65
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che la parete: ', idParete, ' necessita la riparazione della crepa'), punteggio, 4);
+            
+            WHEN punteggio >= 66
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che la parete: ', idParete, ' necessita un rifacimento totale a causa dell allargamento eccessivo della crepa'), punteggio, 2);
+        END CASE;
+
+        -- preparzione del prossimo ciclo
+        SET idsPareti = SUBSTR(idsPareti, POSITION(',' IN idsPareti)+1, LENGTH(idsPareti));
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp)+1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+    -- punteggio ambiente da muri
+    CALL checkUmidita(_idEdificio, 'MURO', statoTmp, idsPareti, contatore);
+    ciclo: LOOP
+		IF contatore = 0
+		THEN 
+            LEAVE ciclo;
+        END IF;
+		
+        SET idTotali = SUBSTR(idsPareti, 1, POSITION(',' IN idsPareti));
+        SET idParete = SUBSTR(idTotali, 1, POSITION('-' IN idTotali) - 1);
+        SET idSensore = SUBSTR(idTotali, POSITION('-' IN idTotali) + 1, LENGTH(idTotali));
+        SET idSensore = SUBSTR(idSensore, 1, LENGTH(idSensore) - 1); -- rimozione virgola finale
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+
+        CASE 
+            -- sotto a 41 non necessita interventi
+            WHEN punteggio BETWEEN 41 AND 75
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che la parete: ', idParete, 
+                                                      ' necessita la rimozione superficiale dello strato di intonaco dove è presente l umidità 
+                                                      e l applicazione di un composto di anti-muffa ed acqua'), punteggio, 4);
+            
+            WHEN punteggio >= 76
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che la parete: ', idParete, ' necessita un rifacimento totale a causa della troppa umidità'), punteggio, 3);
+        END CASE;
+        
+        -- preparzione del prossimo ciclo
+        SET idsPareti = SUBSTR(idsPareti, POSITION(',' IN idsPareti)+1, LENGTH(idsPareti));
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp)+1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+    -- punteggio ambiente da pavimento
+    CALL checkUmidita(_idEdificio, 'PAVIMENTO', statoTmp, idsPareti, contatore);
+    ciclo: LOOP
+		IF contatore = 0
+		THEN 
+            LEAVE ciclo;
+        END IF;
+        
+		SET idTotali = SUBSTR(idsPareti, 1, POSITION(',' IN idsPareti));
+        SET idParete = SUBSTR(idTotali, 1, POSITION('-' IN idTotali) - 1);
+        SET idSensore = SUBSTR(idTotali, POSITION('-' IN idTotali) + 1, LENGTH(idTotali));
+        SET idSensore = SUBSTR(idSensore, 1, LENGTH(idSensore) - 1); -- rimozione virgola finale
+        SET punteggio = SUBSTR(statoTmp, 1, POSITION(',' IN statoTmp));
+        SET punteggio = SUBSTR(punteggio, 1, LENGTH(punteggio) - 1); -- rimozione virgola finale
+
+        CASE 
+            -- sotto a 21 non necessita di interventi
+            WHEN punteggio BETWEEN 21 AND 65
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che il parquet: ', idParete, 
+                                                      ' necessita l applicazione di un composto di acqua e bicarbonato'), punteggio, 5);
+            
+            WHEN punteggio >= 66
+            THEN
+                INSERT INTO interventi VALUES (CONCAT('le misurazioni del sensore: ', idSensore, ' indicano che il parquet: ', idParete, ' necessita la sostituzione delle assi'), punteggio, 4);
+        END CASE;
+        
+        -- preparzione del prossimo ciclo
+        SET idsPareti = SUBSTR(idsPareti, POSITION(',' IN idsPareti)+1, LENGTH(idsPareti));
+        SET statoTmp = SUBSTR(statoTmp, POSITION(',' IN statoTmp)+1, LENGTH(statoTmp));
+		SET contatore = contatore - 1;
+    END LOOP;
+
+    -- punteggio struttura
+    CALL checkStruttura(_idEdificio, statoStruttura);
+    CASE 
+        -- sotto 10 non necessita interventi
+        WHEN punteggio BETWEEN 11 AND 30
+        THEN
+            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che 
+                                                   la struttura necessita un consolidamento'), punteggio, 3);
+        
+        WHEN punteggio >= 31
+        THEN
+            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che 
+                                                   è necessario e urgente un consolidamento della struttura'), punteggio, 1);
+    END CASE;
+    
+    SELECT *
+    FROM interventi
+    ORDER BY priorita, rischio;
+END $$
+DELIMITER ;
+
+-- ===============
+-- stima dei danni
+-- ===============
+
+-- prendere le misurazioni delle crepe (40) e accelerometri (60) fino a 1 giorno dopo calamita terremoto e fare la media
+
+DROP PROCEDURE IF EXISTS stimaDanni;
+DELIMITER $$
+CREATE PROCEDURE stimaDanni(IN _idEdificio INT, IN _gravita INT)
+BEGIN 
+    # VAR 
+    DECLARE area, finito INT DEFAULT 0; 
+    DECLARE gravita DOUBLE DEFAULT 0;
+    DECLARE dataCalamita TIMESTAMP DEFAULT NULL;
+
+    # CURSOR 
+    -- cursore per lo scorrimento dei fessurimetri 
+    SELECT M.*
+    FROM `Misurazione` M 
+    JOIN `Sensore` S ON S.`ID` = M.`id_sensore` 
+    JOIN `Parete` P ON P.`ID` = S.`parete`
+    JOIN `Vano` V ON V.`ID` = P.`vano`
+    WHERE V.`ID` = _idEdificio
+
+    -- cursore per lo scorrimento degli accelerometri
+
+    # HANDLER
+    DECLARE COTINUE HANDLER FOR NOT FOUND SET finito = 1;
+
+    # MAIN
+    -- recupero l'area geografica dell'edificio
+    SELECT E.`area_geografica` INTO area
+    FROM `Edificio` E
+    WHERE E.`ID` = _idEdificio;
+
+    -- recupero la data e la gravita dell'ultimo sisma che ha colpito l'area geografica interessata
+    SELECT AC.`timestamp`, AC.`gravita` INTO dataCalamita, gravita
+    FROM `AreaColpita` AC 
+    JOIN `Calamita` C ON C.`ID` = AC.`calamita`
+    WHERE AC.`area` = area AND C.`tipo` = 'Terremoto'
+    ORDER BY AC.`timestamp`
+    LIMIT 1;
+
+
 END $$
 DELIMITER ;
