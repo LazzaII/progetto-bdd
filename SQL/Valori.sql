@@ -567,7 +567,7 @@ INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `t
 (30, 185, 0, 'fessurimetro', 50, 'mm', 8, NULL), 
 (30, 140, 0, 'giroscopio', 15, 'Nmm', NULL, 3), 
 (40, 100, 0, 'giroscopio', 10, 'Nmm', NULL, 4), 
-(20, 10, 0, 'accelerometro', 15, 'mm/s^2', NULL, 4), 
+(20, 10, 0, 'accelerometro', 15, 'mm/s^2', NULL, 1), 
 (20, 175, 0, 'fessurimetro', 45, 'mm', 3, NULL), 
 (35, 120, 1, 'termometro', -15, '°C', 21, NULL), 
 (45, 175, 0, 'fessurimetro', 40, 'mm', 4, NULL), 

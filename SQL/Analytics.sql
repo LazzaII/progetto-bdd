@@ -778,38 +778,116 @@ DELIMITER $$
 CREATE PROCEDURE stimaDanni(IN _idEdificio INT, IN _gravita INT)
 BEGIN 
     # VAR 
-    DECLARE area, finito INT DEFAULT 0; 
-    DECLARE gravita DOUBLE DEFAULT 0;
-    DECLARE dataCalamita TIMESTAMP DEFAULT NULL;
+    DECLARE areaGeografica, finito, contatore INT DEFAULT 0; 
+    DECLARE gravita, totValAttesi, mediaAttesaCrepe, mediaAttesaAccelerazioni, mediaSogliaFessurimetri, mediaSogliaAccelerometri DOUBLE DEFAULT 0;
+    DECLARE tsCalamita TIMESTAMP DEFAULT NULL;
+    DECLARE output TEXT DEFAULT '';
 
     # CURSOR 
-    -- cursore per lo scorrimento dei fessurimetri 
-    SELECT M.*
-    FROM `Misurazione` M 
-    JOIN `Sensore` S ON S.`ID` = M.`id_sensore` 
-    JOIN `Parete` P ON P.`ID` = S.`parete`
-    JOIN `Vano` V ON V.`ID` = P.`vano`
-    WHERE V.`ID` = _idEdificio
-
-    -- cursore per lo scorrimento degli accelerometri
+    -- cursore per lo scorrimento delle calamità
+	DECLARE cur_calamita CURSOR FOR 
+    SELECT AC.`timestamp`, AC.`gravita`
+    FROM `AreaColpita` AC 
+    JOIN `Calamita` C ON C.`ID` = AC.`calamita`
+    WHERE AC.`area` = areaGeografica AND C.`tipo` = 'Terremoto'
+    ORDER BY AC.`timestamp`;
 
     # HANDLER
-    DECLARE COTINUE HANDLER FOR NOT FOUND SET finito = 1;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
 
     # MAIN
     -- recupero l'area geografica dell'edificio
-    SELECT E.`area_geografica` INTO area
+    SELECT E.`area_geografica` INTO areaGeografica
     FROM `Edificio` E
-    WHERE E.`ID` = _idEdificio;
-
-    -- recupero la data e la gravita dell'ultimo sisma che ha colpito l'area geografica interessata
-    SELECT AC.`timestamp`, AC.`gravita` INTO dataCalamita, gravita
-    FROM `AreaColpita` AC 
-    JOIN `Calamita` C ON C.`ID` = AC.`calamita`
-    WHERE AC.`area` = area AND C.`tipo` = 'Terremoto'
-    ORDER BY AC.`timestamp`
-    LIMIT 1;
-
-
+    WHERE E.`ID` = _idEdificio;    
+    
+    OPEN cur_calamita;
+    
+    WHILE finito = 0 DO 
+		FETCH cur_calamita INTO tsCalamita, gravita;
+    
+		SET totValAttesi = totValAttesi + (
+			SELECT ROUND(AVG(M.`valoreX`)*_gravita/gravita, 2)
+			FROM `Misurazione` M 
+			JOIN `Sensore` S ON S.`ID` = M.`id_sensore` 
+			JOIN `Parete` P ON P.`ID` = S.`parete`
+			JOIN `Vano` V ON V.`ID` = P.`vano`
+			WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'fessurimetro' AND DATEDIFF(M.`timestamp`, tsCalamita) BETWEEN 0 AND 1
+		); 
+        
+        SET contatore = contatore + 1;
+    END WHILE;
+    
+    SELECT ROUND(AVG(S.`soglia`), 2) INTO mediaSogliaFessurimetri
+    FROM `Misurazione` M 
+	JOIN `Sensore` S ON S.`ID` = M.`id_sensore`  
+	JOIN `Parete` P ON P.`ID` = S.`parete`
+	JOIN `Vano` V ON V.`ID` = P.`vano`
+	WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'fessurimetro' AND DATEDIFF(M.`timestamp`, tsCalamita) BETWEEN 0 AND 1;
+	
+    CLOSE cur_calamita;
+    
+	SET mediaAttesaCrepe = totValAttesi/contatore;
+    SET finito = 0; SET contatore = 0; SET totValAttesi = 0;
+    
+    OPEN cur_calamita; 
+    
+    WHILE finito = 0 DO 
+		FETCH cur_calamita INTO tsCalamita, gravita;
+		
+		SET totValAttesi = totValAttesi + (
+			SELECT ROUND(AVG(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)))*_gravita/gravita, 2)
+			FROM `Misurazione` M 
+			JOIN `Sensore` S ON S.`ID` = M.`id_sensore` 
+			JOIN `Vano` V ON V.`ID` = S.`vano`
+			WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'accelerometro' AND DATEDIFF(M.`timestamp`, tsCalamita) BETWEEN 0 AND 1
+		); 
+        
+        SET contatore = contatore + 1;
+    END WHILE;
+    
+    SELECT ROUND(AVG(S.`soglia`), 2) INTO mediaSogliaAccelerometri
+    FROM `Misurazione` M 
+	JOIN `Sensore` S ON S.`ID` = M.`id_sensore`  
+	JOIN `Vano` V ON V.`ID` = S.`vano`
+	WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'accelerometro' AND DATEDIFF(M.`timestamp`, tsCalamita) BETWEEN 0 AND 1;
+    
+    CLOSE cur_calamita;
+    
+    SET mediaAttesaAccelerazioni = totValAttesi/contatore;
+    
+    CASE 
+		-- crepe e pareti
+		WHEN mediaAttesaCrepe/mediaSogliaFessurimetri <= 0.4
+        THEN
+			SET output = CONCAT(output, 'In seguito alle stime effettuate potrebbero formerarsi delle crepe che non necessiteranno una riparazione immediata');
+            
+		WHEN mediaAttesaCrepe/mediaSogliaFessurimetri >= 0.41 AND mediaAttesaCrepe/mediaSogliaFessurimetri <= 0.75
+		THEN 
+			SET output = CONCAT(output, 'In seguito alle stime effettuate ci si aspetta che si formeranno delle crepe che necessiteranno una riparazione');
+            
+		WHEN mediaAttesaCrepe/mediaSogliaFessurimetri >= 0.76
+		THEN 
+			SET output = CONCAT(output, 'In seguito alle stime effettuate ci si aspetta che i danni porteranno alla necessità di ricostruire interamente alcune pareti');
+    END CASE;
+    
+    CASE 
+		-- struttura
+		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri <= 0.3
+        THEN
+			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate la struttura potrebbe subire danneggiamenti che non necessiteranno una riparazione immediata');
+            
+		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri >= 0.5 AND mediaAttesaAccelerazioni/mediaSogliaAccelerometri <= 0.65
+		THEN 
+			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate ci si aspetta che la struttura subirà dei danni che necessiteranno un consolidamento');
+            
+		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri >= 0.65
+		THEN 
+			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate ci si aspetta che i danni subiti saranno molto gravi e sarà necessario un rapido consolidamento della struttura');
+    END CASE;
+    
+    SELECT output;
 END $$
 DELIMITER ;
+
+CALL stimaDanni(1, 5);
