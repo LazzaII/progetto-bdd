@@ -16,54 +16,64 @@ SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 -- =========
 DROP PROCEDURE IF EXISTS checkStruttura;
 DELIMITER $$
-CREATE PROCEDURE checkStruttura(IN _idEdificio INT, OUT valori TEXT)
+CREATE PROCEDURE checkStruttura(IN _idEdificio INT, OUT punteggio_ DOUBLE)
 BEGIN 
 	# VAR
-    DECLARE finito INT DEFAULT 0;
-    
-    # CURSOR
-    DECLARE ma_struttura CURSOR FOR 
-    SELECT M.`id_sensore`, M.`timestamp`, M.`valoreX`, M.`valoreY`, M.`valoreZ`, 
-			  ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
-				/ COUNT(M2.valoreX)
-                FROM Misurazione M2
-                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 1 AND 2
-                AND M.id_sensore = M2.id_sensore
-              ), 2) AS '1dayMA', 
-              ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
-               / COUNT(M2.valoreX)
-                FROM Misurazione M2
-                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 7 AND 14
-                AND M.id_sensore = M2.id_sensore
-              ), 2) AS '7daysMA',
-              ROUND((SELECT IF(M2.valoreY IS NOT NULL, SUM(SQRT(POWER(M2.valoreX, 2) + POWER(M2.valoreY, 2) + POWER(M2.valoreZ, 2))), SUM(M2.valoreX)) 
-               / COUNT(M2.valoreX)
-                FROM Misurazione M2
-                WHERE DATEDIFF(M.timestamp, M2.timestamp) BETWEEN 30 AND 60
-                AND M.id_sensore = M2.id_sensore
-              ), 2) AS '30daysMA'
+	DECLARE id_sensore, sensore_prec, finito, nMedie INT DEFAULT 0;
+    DECLARE modulo, mediaMax, soglia, mediaTot DOUBLE DEFAULT 0;
+	
+	# CURSOR
+	DECLARE cur_struttura CURSOR FOR 
+	SELECT M.`id_sensore`, ROUND(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)), 2) as modulo, S.`soglia`
 	FROM `Misurazione` M
-    JOIN `Sensore` S ON S.`ID` = M.`id_sensore`
-    JOIN `Vano` V ON S.`vano` = V.`ID`
-    WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'accelerometro'
+	JOIN `Sensore` S ON S.`ID` = M.`id_sensore`
+	JOIN `Vano` V ON S.`vano` = V.`ID`
+	WHERE V.`edificio` = _idEdificio AND S.`tipo` = 'accelerometro'
 	ORDER BY M.`id_sensore`, M.`timestamp`;
     
     # HANDLER
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET finito = 1;
+
+	# MAIN
+    OPEN cur_struttura;
     
-    # MAIN
-    OPEN ma_struttura;
-    
-    ciclo: LOOP 
-		IF finito = 1
+    WHILE finito = 0 DO
+		FETCH cur_struttura INTO id_sensore, modulo, soglia;
+        
+        IF id_sensore <> sensore_prec 
         THEN 
-			LEAVE ciclo;
-		END IF;
+			WITH ModuloMisurazioniAccelerometri AS (
+				SELECT M.`id_sensore`, M.`timestamp`, ROUND(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)), 2) as modulo
+				FROM `Misurazione` M
+				WHERE M.`id_sensore` = id_sensore
+			)
+			SELECT ROUND(AVG(MMA.modulo), 2) INTO mediaMAX
+			FROM ModuloMisurazioniAccelerometri MMA
+			JOIN (
+					SELECT ROUND(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)), 2) as modulo
+					FROM `Misurazione` M
+					WHERE M.`id_sensore` = id_sensore 
+					ORDER BY modulo
+					LIMIT 50
+				) as test ON test.modulo = MMA.modulo;
+        END IF;
         
-        
-    END LOOP;
+        IF sensore_prec = 0 OR sensore_prec <> id_sensore
+		THEN 
+			SET sensore_prec = id_sensore;
+            SET mediaTot = mediaTot + mediaMax;
+            SET nMedie = nMedie + 1;
+        END IF;
+    END WHILE;
     
-	CLOSE ma_struttura;
+    CLOSE cur_struttura;
+    
+    IF mediaTot/nMedie < soglia 
+    THEN
+		SET punteggio_ = ROUND(((mediaTot/nMedie)/soglia)*100, 2);
+	ELSE 
+		SET punteggio_ = 100;
+    END IF;
 END $$ 
 DELIMITER ;
 
@@ -134,6 +144,7 @@ BEGIN
     SET finito = 1;
     
     # MAIN
+    SET valori = '';
     CASE
         WHEN tipo = 'MURO' THEN
         BEGIN
@@ -157,7 +168,7 @@ BEGIN
                         SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = CONCAT(valore, ' ', parete_precedente, ' ', sensore_precedente);
+                    SET valori = CONCAT(valori, ' ', valore, ' ', parete_precedente, ' ', sensore_precedente);
                     SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET startVal = 0;
                 END IF; 
                 
@@ -235,7 +246,7 @@ BEGIN
                         SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
                     END IF;
 
-                    SET valori = CONCAT(valore, parete_precedente, sensore_precedente);
+                    SET valori = CONCAT(valori, ' ', valore, parete_precedente, sensore_precedente);
                     SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
                 END IF; 
 
@@ -337,6 +348,7 @@ BEGIN
     SET finito = 1;
 
     # MAIN 
+    SET valori = '';
     OPEN ma_muro_crepe;
     ciclo: LOOP
         IF finito = 1
@@ -357,7 +369,7 @@ BEGIN
                 SET valore = (confirmVal - startVal) / DATEDIFF(confirmTs, startTs);
             END IF;
 
-            SET valori = CONCAT(valore, ' ', parete_precedente, ' ', sensore_precedente);
+            SET valori = CONCAT(valori, ' ', valore, ' ', parete_precedente, ' ', sensore_precedente);
             SET salto = 0; SET parete_precedente = 0; SET sensore_precedente = 0; SET startTs = NULL; SET  startVal = 0;
         END IF; 
 
@@ -415,6 +427,10 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ===============
+-- stato effettivo
+-- ===============
+
 DROP PROCEDURE IF EXISTS calcolaStatoEdificio;
 DELIMITER $$
 CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ VARCHAR(11))
@@ -426,10 +442,13 @@ BEGIN
     DECLARE statoStruttura TEXT DEFAULT '';
     
 	# MAIN
+    SET stato_ = '';
     CALL checkCrepe(_idEdificio, statoPareti);
     CALL checkUmidita(_idEdificio, 'MURO', statoAmbienteMuro);
     CALL checkUmidita(_idEdificio, 'PAVIMENTO', statoAmbientePavimento);
     CALL checkStruttura(_idEdificio, statoStruttura);
+    
+    
 END $$
 DELIMITER ;
 

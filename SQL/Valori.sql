@@ -557,7 +557,7 @@ INSERT INTO `Sensore` (`distanza_da_sx`, `altezza_da_pavimento`, `isEsterno`, `t
 (20, 15, 0, 'giroscopio', 10, 'Nmm', NULL, 1), 
 (60, 175, 0, 'termometro', 55, '°C', 2, NULL), 
 (70, 180, 0, 'termometro', -10, '°C', 7, NULL), 
-(40, 200, 0, 'igrometro', 150, '%', 4, NULL), 
+(40, 200, 0, 'igrometro', 150, '%', NULL, 4), 
 (30, 210, 1, 'pluviometro', 300, 'mm', NULL, NULL), 
 (70, 200, 1, 'pluviometro', 280, 'mm', NULL, NULL), 
 (35, 190, 0, 'igrometro', 120, '%', 6, NULL), 
