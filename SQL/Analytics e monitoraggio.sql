@@ -437,7 +437,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS calcolaStatoEdificio;
 DELIMITER $$
-CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ INT)
+CREATE PROCEDURE calcolaStatoEdificio(IN _idEdificio INT, OUT stato_ INT, OUT descrizione_ TEXT)
 BEGIN 
 	# VAR
 	DECLARE statoTmp, idsPareti TEXT DEFAULT '';
@@ -527,11 +527,33 @@ BEGIN
     
 	-- si sottrae 100 perchè lo stato va da 0 a 100 mentre lo stato calcolato fino a questo punto andrebbe da 100 a 0
 	SET stato_ = 100 - stato_ ;
+    
+	CASE
+		WHEN stato_ >= 75 
+        THEN 
+			SET descrizione_ = 'L edificio inserito si trova in ottime condizioni'; 
+		
+        WHEN stato_ BETWEEN 50 AND 74
+        THEN 
+			SET descrizione_ = 'L edificio inserito si trova in buone condizioni'; 
+            
+		WHEN stato_ BETWEEN 25 AND 49
+        THEN 
+			SET descrizione_ = 'L edificio inserito si trova in pessime condizioni'; 
+            
+		WHEN stato_ <= 24
+        THEN 
+			SET descrizione_ = 'L edificio inserito si trova in condizioni critiche'; 
+    END CASE;
+    
     -- e lo aggiorna nel database oltre a renderlo come output
     UPDATE `Edificio` E SET E.`stato`= stato_ WHERE E.`ID` = _idEdificio;
-   
 END $$
 DELIMITER ;
+
+-- TEST
+-- CALL calcolaStatoEdificio(1, @stato, @descrizione);
+-- SELECT @stato, @descrizione;
 
 -- ===================
 -- CALAMITÀ
@@ -752,13 +774,11 @@ BEGIN
         -- sotto 10 non necessita interventi
         WHEN punteggio BETWEEN 11 AND 30
         THEN
-            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che 
-                                                   la struttura necessita un consolidamento'), punteggio, 3);
+            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che la struttura necessita un consolidamento'), punteggio, 3);
         
         WHEN punteggio >= 31
         THEN
-            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che 
-                                                   è necessario e urgente un consolidamento della struttura'), punteggio, 1);
+            INSERT INTO interventi VALUES (CONCAT('in seguito alle misurazioni degli accelerometri si è concluso che è necessario e urgente un consolidamento della struttura'), punteggio, 1);
     END CASE;
     
     SELECT *
@@ -766,6 +786,9 @@ BEGIN
     ORDER BY priorita, rischio;
 END $$
 DELIMITER ;
+
+-- TEST
+-- CALL consigliIntervento(1);
 
 -- ===============
 -- stima dei danni
@@ -875,19 +898,20 @@ BEGIN
 		-- struttura
 		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri <= 0.3
         THEN
-			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate la struttura potrebbe subire danneggiamenti che non necessiteranno una riparazione immediata');
+			SET output = CONCAT(output, ' e ', 'la struttura potrebbe subire danneggiamenti che non necessiteranno una riparazione immediata');
             
 		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri >= 0.5 AND mediaAttesaAccelerazioni/mediaSogliaAccelerometri <= 0.65
 		THEN 
-			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate ci si aspetta che la struttura subirà dei danni che necessiteranno un consolidamento');
+			SET output = CONCAT(output, ' e ', 'la struttura subirà dei danni che necessiteranno un consolidamento');
             
 		WHEN mediaAttesaAccelerazioni/mediaSogliaAccelerometri >= 0.65
 		THEN 
-			SET output = CONCAT(output, ', ', 'In seguito alle stime effettuate ci si aspetta che i danni subiti saranno molto gravi e sarà necessario un rapido consolidamento della struttura');
+			SET output = CONCAT(output, ' e', 'che i danni subiti dalla struttura saranno molto gravi e sarà necessario un rapido consolidamento');
     END CASE;
     
     SELECT output;
 END $$
 DELIMITER ;
 
-CALL stimaDanni(1, 5);
+-- TEST
+-- CALL stimaDanni(1, 3);
