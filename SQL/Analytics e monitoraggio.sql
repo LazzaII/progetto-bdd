@@ -22,7 +22,7 @@ BEGIN
 	DECLARE id_sensore, sensore_prec, finito, nMedie INT DEFAULT 0;
     DECLARE modulo, mediaMax, soglia, mediaTot DOUBLE DEFAULT 0;
 	
-	# CURSOR
+	# CURSOR
 	DECLARE cur_struttura CURSOR FOR 
 	SELECT M.`id_sensore`, ROUND(SQRT(POWER(M.`valoreX`, 2) + POWER(M.`valoreY`, 2) + POWER(M.`valoreZ`, 2)), 2) as modulo, S.`soglia`
 	FROM `Misurazione` M

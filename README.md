@@ -6,8 +6,25 @@
 
 Lazzarelli Francesco, Croci Edoardo
 
+### Voto
+
+28
+
+### Correzzioni della prof.ssa Vaglini
+
+* C'era un errore nel riportare un campo tra ER e ER ristrutturato e non gli è andato molto a genio, nonstante l'errore non fosse concettuale ma semplice disattenzione nostra.
+* Secondo la professoressa mettere univoco il campo del nome del materiale è un errore in quanto secondo lei diventa una descrizione del materiale e quindi perde di signficato il nome del'attributo. Per questo motivo non gli è piaciuto preso in input nell'operazione 1.
+
 ### Link utili
 
-* [Documentazione finale](https://docs.google.com/document/d/1ya8nX3Gw8y3nZD-kyQoScz581RIdxHXr6iQTtughBCQ/edit?usp=sharing)
-* [Documentazione di analisi](https://docs.google.com/document/d/1bgnnGYWNX4EGVas-Yolnmt2-R8Fxh2Q7bm6CK0Lxrd0/edit?usp=sharing)
-* [Draw.io](https://app.diagrams.net/) Per i diagrammi E/R
+* [Specifiche progetto](/Documentazione/Specifiche%20Progetto.pdf)
+* [ER](/Documentazione/ER.pdf)
+* [ER ristrutturato](/Documentazione/ER-Res.pdf)
+* [Documentazione finale](/Documentazione/Documentazione.pdf)
+
+### Setup SQL
+
+1. Creazione [Database](/SQL/Database.sql)
+2. Creazione [Operazioni](/SQL/Operazioni.sql)
+3. Creazione [Analytics](/SQL/Analytics%20e%20monitoraggio.sql)
+4. [Valoriazzione](/SQL/Valori.sql) database
