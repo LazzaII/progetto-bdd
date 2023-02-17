@@ -27,4 +27,4 @@ Lazzarelli Francesco, Croci Edoardo
 1. Creazione [Database](/SQL/Database.sql)
 2. Creazione [Operazioni](/SQL/Operazioni.sql)
 3. Creazione [Analytics](/SQL/Analytics%20e%20monitoraggio.sql)
-4. [Valoriazzione](/SQL/Valori.sql) database
+4. [Valorizzazione](/SQL/Valori.sql) database
